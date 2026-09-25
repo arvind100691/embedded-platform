@@ -13,17 +13,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-option(BUILD_TESTING "Build tests" ON)
+option(BUILD_TESTING "Build unit and integration tests" ON)
 
-add_executable(embedded_platform
-    app/src/main.cpp
-)
+add_subdirectory(platform/common)
 
-target_include_directories(embedded_platform
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/app/include
-)
+add_subdirectory(app)
 
 if(BUILD_TESTING)
     enable_testing()
+    add_subdirectory(tests)
 endif()
