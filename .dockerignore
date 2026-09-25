@@ -1,0 +1,17 @@
+.git
+.gitignore
+
+build/
+out/
+dist/
+
+.vscode/
+.idea/
+
+*.o
+*.a
+*.elf
+*.bin
+*.hex
+
+compile_commands.json
