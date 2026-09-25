@@ -1,103 +1,54 @@
 # Embedded Platform Coding Standard
 
 **Status:** Initial project standard  
-**Applies to:** Embedded Platform source code, tests, platform code, middleware, BSPs, MCU ports, and host-side utilities where practical.
+**Applies to:** Embedded C/C++, platform code, middleware, BSPs, MCU ports, tests, and host-side utilities where practical.
 
-This document defines the coding conventions and engineering practices for the Embedded Platform project. It combines generally accepted embedded-software practices with the conventions explicitly selected for this repository so far.
+This document combines generally accepted embedded-software practices with the conventions explicitly selected for this repository. It is a project standard, not a claim of compliance with MISRA, CERT, a medical-device standard, or another external standard.
 
-This document is a project coding standard, not a claim of compliance with MISRA, CERT, a medical-device standard, or any other external standard. Compliance with a regulated or industry-specific standard may require additional rules, reviews, analysis, documentation, and verification.
+## 1. General Embedded Principles
 
----
-
-## 1. General Embedded C/C++ Practices
-
-Embedded software should prioritize:
+Code should prioritize:
 
 - Deterministic behavior.
 - Predictable resource usage.
-- Clear ownership of hardware and OS resources.
+- Explicit ownership and lifetime.
+- Clear layer boundaries.
 - Small, testable components.
-- Explicit interfaces between layers.
-- Portability across MCUs and boards.
+- Portability across boards and MCUs.
 - Compile-time checking where practical.
-- Minimal hidden runtime behavior.
-- Diagnosable failures.
+- Diagnosable errors.
 - Reproducible builds.
 
-For resource-constrained or safety-oriented products, project-specific restrictions may be stricter than the rules in this document.
+Relevant external guidance may include MISRA C/C++, CERT C/C++, C++ Core Guidelines, vendor coding guidance, and product-specific safety/security processes. Adoption of any external standard must be explicit and include project-specific deviations where required.
 
-### Common external guidance
+## 2. Language Standards
 
-Depending on the product domain, teams commonly use standards or guidance such as:
-
-- **MISRA C** for C software.
-- **MISRA C++** for C++ software.
-- **CERT C / CERT C++** for secure coding guidance.
-- **C++ Core Guidelines** for general C++ design guidance.
-- Vendor-specific coding rules and hardware errata.
-- Product or safety-process-specific rules when required by the domain.
-
-The project should adopt only the rules that are compatible with its compiler, target, architecture, and verification strategy and should document any deviations.
-
----
-
-# 2. Language Standard
-
-## 2.1 C
-
-C code uses **C11** unless a target-specific restriction requires an older dialect.
-
-CMake currently specifies:
+C uses C11:
 
 ```cmake
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
+set(CMAKE_C_EXTENSIONS OFF)
 ```
 
-## 2.2 C++
-
-C++ code uses **C++17**.
-
-CMake currently specifies:
+C++ uses C++17:
 
 ```cmake
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 ```
 
-Do not use C++ features newer than C++17 until the project standard is intentionally updated.
+Do not use C++20/C++23 language features until the project standard is deliberately changed.
 
----
+## 3. Types
 
-# 3. General C++ Rules
+Use fixed-width integer types for protocol, hardware, memory-map, and binary-format data.
 
-## 3.1 Prefer strong types
-
-Prefer explicit types over ambiguous primitive types when the meaning matters.
-
-Good:
+The platform provides aliases such as:
 
 ```cpp
-platform::UInt32 timeoutMs;
-platform::Address address;
-platform::Byte data[32];
-```
-
-Avoid cryptic or implementation-dependent declarations when a project type communicates the intent better.
-
-## 3.2 Use fixed-width integer types for binary and hardware-facing data
-
-Use the platform types defined in:
-
-```text
-platform/common/Types.hpp
-```
-
-which are based on `<cstdint>` and `<cstddef>`.
-
-Examples:
-
-```cpp
+platform::Byte
 platform::UInt8
 platform::UInt16
 platform::UInt32
@@ -107,13 +58,9 @@ platform::Size
 platform::Address
 ```
 
-This is especially important for protocol packets, register values, flash layouts, firmware metadata, and persistent structures.
+Prefer `std::uint32_t`/the platform aliases over implementation-dependent types such as `unsigned long` when exact width matters.
 
-## 3.3 Prefer `enum class`
-
-Use scoped enumerations instead of unscoped enums where possible.
-
-Good:
+Use `enum class` for scoped enumerations:
 
 ```cpp
 enum class GpioState
@@ -123,927 +70,479 @@ enum class GpioState
 };
 ```
 
-This prevents accidental implicit conversion to unrelated integer values.
+## 4. `const` and `constexpr`
 
-## 3.4 Use `const` and `constexpr`
+Use `const` for values that do not change and `constexpr` for compile-time constants where appropriate.
 
-Make data immutable whenever possible.
-
-Prefer:
+Example:
 
 ```cpp
 constexpr platform::UInt32 BufferSize = 128U;
 ```
 
-over a mutable global constant.
+Avoid mutable global state unless it represents a deliberately shared hardware/runtime resource.
 
-Use `const` for values that do not need to change after initialization.
+## 5. C++17 Usage
 
-Use `constexpr` when a value or function can be evaluated at compile time.
+Use C++17 features that improve clarity and safety, but maintain embedded constraints.
 
-## 3.5 Prefer RAII for resource lifetime where appropriate
+Do not use C++20 designated initialization in this project because the language baseline is C++17.
 
-For C++ resources with deterministic lifetime, use objects whose lifetime clearly owns the resource.
+Preferred:
 
-Examples include:
+```cpp
+platform::hal::GpioConfig config{};
+config.direction = platform::hal::GpioDirection::Output;
+config.initialState = platform::hal::GpioState::High;
+```
 
-- Locks.
-- Temporary buffers.
-- File/host-side resources.
-- Scoped configuration changes.
+Instead of C++20-only designated initialization.
 
-For hardware resources, ownership must remain explicit and compatible with the target environment.
+## 6. Exceptions and RTTI
 
-## 3.6 Avoid unnecessary dynamic allocation
+The current target policy is:
 
-The current platform design assumes:
+- No exceptions in embedded target code.
+- No RTTI in embedded target code.
+- Use explicit result/error handling.
 
-- No uncontrolled heap allocation in core embedded paths.
-- Prefer static or stack storage when the lifetime and size are known.
-- Prefer fixed-capacity containers for real-time paths.
-- Document unavoidable dynamic allocation.
+Normal error handling should use:
 
-Examples of preferred building blocks include fixed-size buffers, ring buffers, memory pools, and static queues.
+```cpp
+platform::ErrorCode
+platform::Result<T>
+```
 
-We will add concrete allocation rules before introducing RTOS memory management.
+rather than exceptions.
 
----
+Host-only tools may use richer C++ facilities when there is no impact on the target runtime architecture.
 
-# 4. Exceptions and RTTI
+## 7. Dynamic Memory
 
-The current embedded-platform design assumes that the core target build will avoid:
+Avoid uncontrolled dynamic allocation in target runtime code.
 
-- C++ exceptions.
-- Run-time type information (RTTI).
+Prefer:
 
-Use explicit error handling instead.
+- Static storage where lifetime is global/system-level and justified.
+- Stack storage for bounded short-lived objects.
+- Fixed-capacity containers.
+- Memory pools when dynamic lifetime is genuinely required.
 
-For example:
+Any required heap usage should have an explicit ownership, lifetime, fragmentation, and failure strategy.
+
+## 8. Error Handling
+
+Do not use unexplained magic return values:
+
+```cpp
+return -1;
+```
+
+Use the common error model:
 
 ```cpp
 return platform::Result<void>::failure(
     platform::ErrorCode::Timeout);
 ```
 
-rather than using exceptions for normal embedded error paths.
+Use `bool` only when success/failure is the only information required.
 
-The corresponding compiler options will be made explicit in the target toolchain configuration when the STM32 build is added.
+Callers should inspect returned errors and intentionally document ignored results where appropriate.
 
----
+## 9. Interfaces and Dependency Injection
 
-# 5. Error Handling
-
-## 5.1 Do not use magic error numbers
-
-Avoid:
-
-```cpp
-return -1;
-```
-
-Prefer the common error model:
-
-```cpp
-return platform::ErrorCode::Timeout;
-```
-
-or:
-
-```cpp
-return platform::Result<Data>::failure(
-    platform::ErrorCode::CommunicationError);
-```
-
-## 5.2 Do not use `bool` when the caller needs an error reason
-
-A boolean is appropriate when the only required information is success/failure.
-
-When the caller needs to distinguish conditions, use `ErrorCode` or `Result<T>`.
-
-## 5.3 Check error results
-
-A returned error should not be silently ignored unless ignoring it is intentional and documented.
-
----
-
-# 6. Interfaces and Dependency Injection
-
-Hardware and operating-system dependencies should be represented by interfaces where portability and unit testing benefit from abstraction.
+Hardware/OS dependencies should be represented by interfaces when abstraction and unit testing provide value.
 
 Example:
 
 ```cpp
-class IGpio
+class StatusLed
 {
 public:
-    virtual ~IGpio() = default;
+    explicit StatusLed(platform::hal::IGpio& gpio);
 
-    virtual void set(GpioState state) = 0;
-    virtual GpioState get() const = 0;
-    virtual void toggle() = 0;
+private:
+    platform::hal::IGpio& gpio_;
 };
 ```
 
-Application code should depend on the abstraction:
+Application code should depend on `IGpio`, not `Stm32Gpio` or STM32 HAL functions.
 
-```cpp
-StatusLed(IGpio& gpio);
-```
+Use composition rather than deep inheritance hierarchies.
 
-rather than directly depending on STM32 HAL calls.
+Polymorphic interfaces must have virtual destructors.
 
-This allows the same application logic to work with:
+## 10. Header Dependency Rules
 
-- STM32 implementation.
-- Another MCU implementation.
-- A fake/mock implementation for host tests.
+### Portable code may include
 
----
+- Standard C/C++ headers.
+- Platform-independent project headers appropriate to its layer.
 
-# 7. Class Design
-
-## 7.1 One responsibility per class
-
-Classes should have a focused responsibility.
-
-Examples:
+### Portable code must not include
 
 ```text
-Stm32Uart       -> hardware UART access
-SoftwareUpdater -> update-state management
-FirmwareImage   -> firmware-image representation/validation
+stm32f1xx_hal.h
+stm32f1xx.h
+FreeRTOS.h
+cmsis_os.h
 ```
 
-Do not create a large class that combines hardware access, protocol handling, application logic, and persistence.
+unless the file belongs to the corresponding implementation boundary.
 
-## 7.2 Prefer composition over inheritance
+Vendor types such as:
 
-Use inheritance primarily for genuine interfaces/polymorphic boundaries.
+```text
+GPIO_TypeDef
+UART_HandleTypeDef
+HAL_StatusTypeDef
+```
+
+must remain inside MCU-specific code.
+
+## 11. MCU Port vs BSP
+
+The MCU port defines **how** a peripheral works on the MCU.
 
 Example:
 
 ```text
-IGpio
-  |
-  +-- Stm32Gpio
-  +-- MockGpio
+Stm32Gpio
+Stm32Uart
+Stm32Spi
 ```
 
-Application functionality should generally be composed from interfaces and services rather than using deep inheritance hierarchies.
+The BSP defines **where/how the specific board is wired and initialized**.
 
-## 7.3 Virtual interface classes need virtual destructors
+Example:
 
-For polymorphic interfaces, use:
-
-```cpp
-virtual ~IGpio() = default;
+```text
+PC13 -> Status LED
+I2C1 -> Board Sensor
+USART1 -> Debug UART
 ```
 
-## 7.4 Make ownership explicit
+Do not hard-code product-board pin mappings into generic MCU drivers.
 
-Prefer references or pointers that clearly communicate ownership.
+## 12. Naming
 
-For non-owning dependencies, a reference is preferred when a dependency must always exist:
+### Classes/structs
 
-```cpp
-StatusLed(IGpio& gpio);
-```
-
-Owning relationships should be explicit and reviewed before introducing heap allocation.
-
----
-
-# 8. Naming Convention
-
-The project currently follows these conventions.
-
-## 8.1 Classes and structs
-
-Use **PascalCase**:
+PascalCase:
 
 ```cpp
-class StatusLed;
 class SoftwareUpdater;
 struct CanFrame;
 ```
 
-## 8.2 Functions and methods
+### Functions/methods
 
-Use **camelCase**:
+camelCase:
 
 ```cpp
-readTemperature();
-start();
-getStatus();
+readStatus();
+setDutyCycle();
 ```
 
-## 8.3 Variables and parameters
+### Variables/parameters
 
-Use **camelCase**:
+camelCase:
 
 ```cpp
 uint32_t timeoutMs;
 uint8_t dataSize;
 ```
 
-## 8.4 Private data members
+### Private data members
 
-The current code uses a trailing underscore:
+Trailing underscore:
 
 ```cpp
 GPIO_TypeDef* port_;
-uint16_t pin_;
+std::uint16_t pin_;
 ```
 
-Continue using this convention.
+### Interfaces
 
-## 8.5 Constants
-
-For scoped constants, prefer `constexpr` and a descriptive PascalCase name:
-
-```cpp
-constexpr platform::UInt32 MaxFrameSize = 64U;
-```
-
-Avoid preprocessor macros for typed constants.
-
-## 8.6 Interfaces
-
-Interfaces currently use the `I` prefix:
+Use the `I` prefix consistently for platform contracts:
 
 ```text
 IGpio
 IUart
-ISpi
-II2c
-ICan
 ITimer
 IFlashStorage
 ```
 
-Maintain this convention consistently if the project continues using interface-based abstraction.
+## 13. Formatting
 
----
+Use a consistent formatter configuration across the repository.
 
-# 9. File and Header Rules
+Recommended baseline:
 
-## 9.1 One main type per header where practical
+- 4-space indentation for C/C++.
+- Braces on the same style throughout a file.
+- One logical declaration per line when it improves readability.
+- Keep functions short enough to understand locally.
+- Avoid excessive horizontal line length.
 
-Prefer focused headers:
+Formatting should eventually be enforced automatically with `.clang-format` and CI.
+
+## 14. `noexcept`
+
+Use `noexcept` where an operation is intentionally non-throwing and the guarantee is useful to the design.
+
+Examples include small status/query functions:
+
+```cpp
+bool isSuccess(ErrorCode error) noexcept;
+```
+
+Do not mechanically add `noexcept` everywhere; the guarantee should be truthful.
+
+## 15. ISR and Callback Rules
+
+Interrupt callbacks are a special execution context.
+
+Unless explicitly documented otherwise, a hardware interrupt callback must be treated as **ISR context**.
+
+ISR callbacks must:
+
+- Return quickly.
+- Avoid blocking.
+- Avoid sleeping/delaying.
+- Avoid uncontrolled dynamic allocation.
+- Use ISR-safe synchronization APIs where an RTOS requires them.
+- Defer complex processing to a task where practical.
+
+Example pattern:
 
 ```text
-IGpio.hpp
-IUart.hpp
-Result.hpp
-ErrorCode.hpp
+Hardware interrupt
+       |
+       v
+Short ISR callback
+       |
+       v
+Queue/Event
+       |
+       v
+OS task
+       |
+       v
+Longer processing
 ```
 
-## 9.2 Use `#pragma once`
+Every callback interface should document whether callbacks execute in ISR, interrupt-deferred, or task/thread context.
 
-The current project uses:
+## 16. Callback Lifetime
+
+When an interface accepts:
 
 ```cpp
-#pragma once
+callback
+context
 ```
 
-for C++ headers.
+the owner of the callback context must guarantee that it remains valid for as long as the callback can occur.
 
-## 9.3 Include what you use
+Registration and unregistration rules must be explicit.
 
-A source/header file should include the declarations it directly depends on rather than relying on indirect includes.
+## 17. Blocking Semantics
 
-## 9.4 Keep include dependencies minimal
+API contracts should make blocking behavior clear.
 
-Avoid including large framework or MCU headers in portable code.
-
-For example, this is forbidden in `platform/common`:
+For example:
 
 ```cpp
-#include "stm32f1xx_hal.h"
+transmit(data, size, timeoutMs);
+```
+
+is a synchronous operation and may block until completion or timeout.
+
+Asynchronous behavior should use explicit capability interfaces such as:
+
+```text
+IAsyncUart
+```
+
+rather than silently changing the semantics of a basic interface.
+
+## 18. Concurrency
+
+Shared state must have an explicit concurrency strategy.
+
+Possible mechanisms:
+
+- Critical sections.
+- Atomic variables.
+- Mutexes.
+- Semaphores.
+- Queues/events.
+- Ownership transfer.
+
+Do not protect a data structure with a mutex merely because concurrent access exists; first determine whether the access can be architected as single-owner or message-based.
+
+## 19. Time
+
+Avoid scattering raw time assumptions throughout application logic.
+
+Prefer platform time abstractions such as `IClock` and explicit units:
+
+```cpp
+timeoutMs
+delayUs
+timestampMs
+```
+
+Never use an unlabelled integer for a time quantity if the unit is not obvious.
+
+## 20. Hardware Register Access
+
+Direct register access is allowed only in the appropriate MCU/platform implementation layer.
+
+Application and portable middleware should never access MCU registers directly.
+
+When direct register access is necessary:
+
+- Keep it local to the MCU port.
+- Document why the vendor HAL is insufficient.
+- Follow vendor reference-manual requirements.
+- Avoid mixing register access with product logic.
+
+## 21. Testing
+
+Production code must not depend on GoogleTest.
+
+Tests may depend on:
+
+```text
+GoogleTest
+GoogleMock
+CTest
+Test doubles
+```
+
+Unit tests should be deterministic and avoid real hardware whenever practical.
+
+Test names should describe observable behavior:
+
+```cpp
+TEST(ResultTest, FailedResultContainsError)
+```
+
+rather than implementation details.
+
+## 22. Test Doubles
+
+Use the lightest test double that satisfies the test:
+
+- Fake for simple deterministic behavior.
+- Stub for fixed responses.
+- Mock when interaction verification is important.
+
+Test doubles belong under `tests/` and must not become production dependencies.
+
+## 23. CMake Rules
+
+Use targets and target dependencies rather than global compiler/include configuration wherever practical.
+
+Prefer:
+
+```cmake
+target_link_libraries(my_target PRIVATE platform_common)
 ```
 
 and:
 
-```cpp
-#include "FreeRTOS.h"
-```
-
----
-
-# 10. Namespaces
-
-Platform code uses the `platform` namespace.
-
-Example:
-
-```cpp
-namespace platform
-{
-
-using UInt32 = std::uint32_t;
-
-} // namespace platform
-```
-
-Nested namespaces should communicate ownership clearly.
-
-Avoid importing an entire namespace with:
-
-```cpp
-using namespace std;
-```
-
-especially in headers.
-
----
-
-# 11. Braces and Formatting
-
-The project currently uses Allman-style braces for classes, functions, namespaces, and control blocks.
-
-Example:
-
-```cpp
-if (value > limit)
-{
-    handleLimitExceeded();
-}
-```
-
-Classes:
-
-```cpp
-class StatusLed
-{
-public:
-    void turnOn();
-
-private:
-    IGpio& gpio_;
-};
-```
-
-Namespaces:
-
-```cpp
-namespace platform
-{
-
-// Code
-
-} // namespace platform
-```
-
-The repository should eventually enforce formatting with `.clang-format` rather than relying only on manual review.
-
----
-
-# 12. `nullptr`, `override`, and `noexcept`
-
-Use modern C++ forms:
-
-Prefer:
-
-```cpp
-nullptr
-```
-
-over:
-
-```cpp
-NULL
-```
-
-Always use `override` when overriding a virtual method:
-
-```cpp
-void toggle() override;
-```
-
-Use `noexcept` when a function is guaranteed not to throw and the contract benefits from expressing that fact:
-
-```cpp
-bool hasValue() const noexcept;
-```
-
----
-
-# 13. Global State
-
-Avoid mutable global state.
-
-Do not create global hardware objects merely for convenience.
-
-Prefer dependency construction at the composition root:
-
-```text
-main()
-  |
-  +-- create hardware implementations
-  +-- create services
-  +-- inject dependencies
-  +-- start application
-```
-
-The composition root is allowed to know about concrete STM32 classes; application code is not.
-
----
-
-# 14. Interrupt Service Routines
-
-When interrupt-driven code is introduced, ISR rules must be explicit.
-
-Until a detailed ISR standard is added, use these principles:
-
-- Keep ISRs short and deterministic.
-- Do not perform blocking operations in an ISR.
-- Do not call arbitrary application code from an ISR.
-- Avoid heap allocation in an ISR.
-- Use a safe ISR-to-task/event handoff mechanism.
-- Protect data shared between ISR and foreground/task contexts.
-- Understand `volatile` as a visibility tool, not a synchronization primitive.
-
-The ISR-specific rules will be expanded when the timer, DMA, UART, and RTOS layers are implemented.
-
----
-
-# 15. Concurrency
-
-For RTOS or multithreaded code:
-
-- Define ownership of shared data.
-- Minimize shared mutable state.
-- Prefer message passing where appropriate.
-- Keep critical sections short.
-- Never hold a mutex while performing an operation that may block for an unbounded period unless explicitly justified.
-- Document lock ordering when multiple locks can be held.
-- Avoid deadlock-prone nested locking.
-
-These rules will be refined when the OS abstraction layer is implemented.
-
----
-
-# 16. Hardware Abstraction Rules
-
-MCU-specific knowledge belongs in the MCU port.
-
-For example:
-
-```text
-platform/ports/stm32/stm32f103/
-```
-
-may contain:
-
-```cpp
-GPIO_TypeDef*
-HAL_GPIO_WritePin()
-HAL_UART_Transmit()
-```
-
-Portable platform/application code must not directly depend on these APIs.
-
-The intended dependency direction is:
-
-```text
-Application
-    ↓
-Platform interfaces
-    ↓
-Middleware / OS
-    ↓
-MCU port
-    ↓
-STM32 HAL / SDK
-    ↓
-Hardware
-```
-
----
-
-# 17. BSP Rules
-
-The MCU port describes what the MCU can do.
-
-The BSP describes how a particular board/product connects to that MCU.
-
-For example:
-
-```text
-STM32F103
-    |
-    +-- GPIO peripheral
-    +-- UART peripheral
-    +-- SPI peripheral
-
-STM32F103 Board
-    |
-    +-- LED -> PC13
-    +-- Sensor -> I2C1
-    +-- Debug UART -> USART1
-```
-
-Do not place board-specific pin mappings in generic STM32 driver code.
-
----
-
-# 18. Logging and Diagnostics
-
-Logging should eventually use a platform abstraction rather than direct `printf()` calls throughout application code.
-
-Example intended direction:
-
-```text
-Application
-    ↓
-ILogger
-    ↓
-Logging implementation
-    ↓
-UART / RTT / ITM / file / host output
-```
-
-Do not introduce unrestricted logging into interrupt or hard real-time paths.
-
-Log messages should be useful for diagnosis without changing timing-sensitive behavior unnecessarily.
-
----
-
-# 19. Protocol and Binary Data
-
-For protocol packets, flash metadata, firmware images, and persistent structures:
-
-- Use explicitly sized integer types.
-- Define endianness explicitly.
-- Do not rely on compiler structure padding for a wire format.
-- Prefer explicit serialization/deserialization.
-- Validate lengths before indexing buffers.
-- Validate ranges before converting values.
-- Check CRC/hash/signature results before accepting critical data.
-
-Binary formats should have a single shared definition where host tools and firmware both consume the same format.
-
----
-
-# 20. Buffer Safety
-
-Every externally controlled length must be checked before accessing a buffer.
-
-Prefer APIs that carry both pointer and size:
-
-```cpp
-bool transmit(
-    const uint8_t* data,
-    size_t size);
-```
-
-Avoid APIs that rely on null termination when the data is binary.
-
-Use bounded operations and fixed-capacity buffers in real-time paths whenever practical.
-
----
-
-# 21. Testing Standard
-
-Every reusable module should be designed so that its behavior can be tested independently.
-
-The repository uses:
-
-```text
-GoogleTest
-CTest
-```
-
-Unit tests belong under:
-
-```text
-tests/unit/
-```
-
-Integration tests belong under:
-
-```text
-tests/integration/
-```
-
-Mocks/fakes belong under:
-
-```text
-tests/mocks/
-```
-
-Production code must not depend on GoogleTest.
-
-The preferred direction is:
-
-```text
-tests
-    ↓
-production target
-```
-
-not the reverse.
-
----
-
-# 22. Host-Testability
-
-Portable logic should be testable on Linux without requiring the physical STM32 target.
-
-This applies especially to:
-
-- Algorithms.
-- Buffers.
-- Parsers.
-- State machines.
-- Protocol handling.
-- CRC/hash processing.
-- Firmware image validation.
-- Software-update state management.
-
-Hardware-specific code should be isolated so that it can be tested independently or with hardware/integration tests.
-
----
-
-# 23. CMake and Build Rules
-
-The project uses CMake as the build system.
-
-Prefer target-based CMake:
-
 ```cmake
-target_link_libraries(my_target
-    PRIVATE
-        platform_common
-)
+target_include_directories(my_target PRIVATE ...)
 ```
 
-Avoid global compiler/include/linker settings where a target-specific setting is sufficient.
+over global include paths or global libraries.
 
-Use CMake targets to express architecture and dependency boundaries.
+Targets should expose only the dependencies that consumers actually need.
 
-Examples of intended targets include:
+## 24. Docker and Toolchain Rules
 
-```text
-platform_common
-platform_os
-platform_middleware
-platform_stm32f103
-application
-platform_common_unit_tests
-```
+The Dev Container is the reference development environment.
 
-The project uses CMake Presets for repeatable build configurations.
-
----
-
-# 24. Toolchain and Host Tools
-
-Developer/build tools belong under:
-
-```text
-tools/
-```
-
-Examples:
+Target compiler configuration belongs under:
 
 ```text
 tools/cmake/toolchains/
-tools/flash/
-tools/debug/
-tools/scripts/
-tools/host/
 ```
 
-The following distinction should remain clear:
+Host tools, flashing, debug scripts, and Linux-native utilities belong under `tools/`.
 
-```text
-Host-side tool
-    -> tools/
+Runtime target code must not depend on host-side tools.
 
-Target runtime library
-    -> platform/
-```
+## 25. Third-Party Dependencies
 
-For example, a firmware packaging command-line application belongs under `tools/host`, while the firmware image parser/validator used by the target belongs in the platform runtime layer.
-
----
-
-# 25. External Dependencies
-
-Third-party libraries belong under:
+External dependencies belong under:
 
 ```text
 external/
 ```
 
-Examples include:
+Dependencies should have:
 
-```text
-GoogleTest
-FreeRTOS
-```
+- Pinned versions/commits.
+- Recorded upstream source.
+- License information.
+- Minimal integration surface.
 
-Dependencies should be version-pinned and documented.
+Do not modify vendor code to implement product-specific behavior.
 
-Production code should not silently download an uncontrolled dependency during a normal build.
+## 26. Documentation
 
----
+Non-obvious architectural decisions should be documented near the affected subsystem and/or under `docs/`.
 
-# 26. Comments and Documentation
+Public interfaces should document:
 
-Comments should explain **why**, not merely restate **what** the code does.
-
-Avoid:
-
-```cpp
-// Increment i
-++i;
-```
-
-Prefer comments that explain an architectural or hardware reason:
-
-```cpp
-// DMA requires the buffer to remain valid until the transfer-complete
-// interrupt is received.
-```
-
-Document:
-
-- Hardware assumptions.
-- Timing assumptions.
+- Parameters.
+- Return values.
 - Ownership.
-- Concurrency requirements.
-- Units.
-- Protocol formats.
-- Non-obvious workarounds.
-- Hardware errata.
+- Blocking behavior.
+- Context (ISR/task/thread).
+- Lifetime requirements.
+- Error conditions.
 
-Use explicit units in identifiers:
+## 27. Current Project Conventions
 
-```cpp
-timeoutMs
-frequencyHz
-sizeBytes
-voltageMv
-```
-
----
-
-# 27. Magic Numbers
-
-Avoid unexplained numeric literals.
-
-Prefer:
-
-```cpp
-constexpr platform::UInt32 HeartbeatPeriodMs = 1000U;
-```
-
-over:
-
-```cpp
-startTimer(1000U);
-```
-
-Protocol constants should preferably be named according to their meaning:
-
-```cpp
-constexpr platform::UInt32 HeartbeatMessageId = 0x100U;
-```
-
----
-
-# 28. Assertions and Defensive Programming
-
-Assertions may be used to detect programmer errors and impossible states during development.
-
-Assertions must not replace runtime validation of external or untrusted data.
-
-For example, protocol length validation must still occur in production builds even if an assertion exists during development.
-
----
-
-# 29. Static Analysis and Formatting
-
-The Docker development environment is intended to provide:
+The conventions explicitly adopted so far are:
 
 ```text
-clang-format
-clang-tidy
-cppcheck
+Language       C11 / C++17
+Build          CMake + Ninja
+Environment    Docker Dev Container
+Target         ARM GCC / STM32F103
+Testing        GoogleTest + CTest
+Formatting     clang-format planned/enforced
+Analysis       clang-tidy / cppcheck available
+Debugging      GDB Multiarch / OpenOCD / Cortex-Debug
+Errors         ErrorCode + Result<T>
+Interfaces     I-prefixed polymorphic contracts
+Private data   trailing underscore
+Exceptions     disabled for embedded target
+RTTI           disabled for embedded target
 ```
 
-These tools should eventually be integrated into CMake/CI with project-specific configuration files.
+## 28. Rules That Will Be Added Later
 
-The project should maintain:
+As the platform grows, this document should explicitly define:
 
-```text
-.clang-format
-.clang-tidy
-```
-
-once the initial formatting and analysis rules are finalized.
-
-Static analysis warnings should generally be treated as defects unless there is a documented and reviewed deviation.
-
----
-
-# 30. Git and Code Review
-
-Changes should be small enough to review and should preserve the architectural dependency direction.
-
-Before submitting a change, developers should run at minimum:
-
-```bash
-cmake --preset host-debug
-cmake --build --preset host-debug
-ctest --test-dir build/host-debug --output-on-failure
-```
-
-As the CI pipeline grows, it should additionally run formatting checks, static analysis, and target builds.
-
-Do not commit generated build output.
-
----
-
-# 31. Rules We Have Explicitly Adopted So Far
-
-The following are the project decisions established during the initial architecture work:
-
-| Area | Current project rule |
-|---|---|
-| C | C11 |
-| C++ | C++17 |
-| Build | CMake |
-| Build generator | Ninja in container presets |
-| Build environment | Linux Docker/Dev Container |
-| Target compiler | `arm-none-eabi-gcc` for ARM target builds |
-| Host compiler | GCC/G++ in Linux container |
-| Integer types | `<cstdint>`-based fixed-width project aliases |
-| Error handling | `ErrorCode` / `Result<T>` for explicit errors |
-| Exceptions | Not planned for the core embedded target |
-| RTTI | Not planned for the core embedded target |
-| Interfaces | `I...` naming convention |
-| Polymorphism | Virtual interfaces with `override` and virtual destructors |
-| Header protection | `#pragma once` |
-| Naming | PascalCase types, camelCase functions/variables, `_` for private members |
-| Namespace | `platform` for platform-level types/components |
-| Hardware abstraction | Application must not directly depend on STM32 HAL |
-| MCU-specific code | `platform/ports/...` |
-| Board-specific code | `platform/bsp/...` |
-| Tests | GoogleTest + CTest |
-| Unit tests | `tests/unit/` |
-| Integration tests | `tests/integration/` |
-| Mocks | `tests/mocks/` |
-| Third-party libraries | `external/` |
-| Host tooling | `tools/host/` |
-| Toolchains | `tools/cmake/toolchains/` |
-| Flash/debug scripts | `tools/flash/`, `tools/debug/` |
-| Reproducibility | Docker + CMake Presets |
-
----
-
-# 32. Rules Still To Be Defined
-
-The following should be finalized as the corresponding platform layers are implemented:
-
-- ISR-safe API rules.
-- RTOS task and synchronization rules.
-- Locking and lock-order rules.
-- Memory-allocation policy.
-- DMA buffer ownership and cache rules where applicable.
-- Register-access conventions.
-- Volatile/atomic usage rules.
-- Bit-field policy.
-- Packed-structure policy.
-- Compiler warning policy.
-- MISRA/CERT adoption level and deviations, if required.
-- Logging severity and formatting.
-- Traceability requirements for safety/regulatory builds.
-- Firmware-update and bootloader security rules.
-- Cryptography API and key-management rules.
-
-These should be added only when the architecture reaches those areas so the rules describe real project behavior instead of speculative restrictions.
-
----
-
-# 33. Guiding Principle
-
-The coding standard should make the system:
-
-```text
-Readable
-   ↓
-Predictable
-   ↓
-Testable
-   ↓
-Portable
-   ↓
-Deterministic
-   ↓
-Maintainable
-```
-
-The platform should prefer explicit design over hidden behavior, clear ownership over implicit ownership, and compile-time architectural boundaries over conventions that exist only in documentation.
+- MISRA/CERT adoption level if required.
+- Maximum stack usage rules.
+- Heap policy and memory budget ownership.
+- ISR execution-time budget.
+- Task priorities and scheduling rules.
+- Atomic/lock-free policy.
+- DMA buffer alignment/cache rules for MCUs where applicable.
+- Logging policy and allowed logging contexts.
+- Firmware-update security requirements.
+- Cryptographic API requirements.
+- Secure-boot and key-management rules.
+- HIL test conventions.
+- Static-analysis thresholds.
+- Code coverage thresholds.
+- Release/build reproducibility requirements.
