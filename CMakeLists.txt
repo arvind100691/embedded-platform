@@ -13,6 +13,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(BUILD_TESTING "Build tests" ON)
+
 add_executable(embedded_platform
     app/src/main.cpp
 )
@@ -21,3 +23,7 @@ target_include_directories(embedded_platform
     PRIVATE
         ${CMAKE_SOURCE_DIR}/app/include
 )
+
+if(BUILD_TESTING)
+    enable_testing()
+endif()
