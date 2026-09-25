@@ -16,6 +16,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option(BUILD_TESTING "Build unit and integration tests" ON)
 
 add_subdirectory(platform/common)
+add_subdirectory(platform/hal)
+add_subdirectory(platform/os)
 
 add_subdirectory(app)
 

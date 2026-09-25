@@ -10,4 +10,6 @@ target_include_directories(embedded_platform
 target_link_libraries(embedded_platform
     PRIVATE
         platform_common
+        platform_hal
+        platform_os
 )
