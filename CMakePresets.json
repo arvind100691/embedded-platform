@@ -28,6 +28,19 @@
                 "BUILD_TESTING": "OFF",
                 "BUILD_STM32F103": "ON"
             }
+        },
+        {
+            "name": "stm32f103-gpio-test",
+            "displayName": "STM32F103 GPIO Integration Test",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/stm32f103-gpio-test",
+            "toolchainFile": "${sourceDir}/tools/cmake/toolchains/arm-none-eabi-gcc.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "BUILD_TESTING": "OFF",
+                "BUILD_STM32F103": "ON",
+                "BUILD_STM32F103_INTEGRATION_TESTS": "ON"
+            }
         }
     ],
     "buildPresets": [
@@ -38,6 +51,10 @@
         {
             "name": "stm32f103-debug",
             "configurePreset": "stm32f103-debug"
+        },
+        {
+            "name": "stm32f103-gpio-test",
+            "configurePreset": "stm32f103-gpio-test"
         }
     ]
 }
