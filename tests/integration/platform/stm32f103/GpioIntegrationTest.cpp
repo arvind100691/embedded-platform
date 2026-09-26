@@ -1,45 +1,45 @@
 #include <cstdint>
 
+#include "platform/bsp/stm32f103_board/Board.hpp"
 #include "platform/hal/IGpio.hpp"
 #include "platform/stm32f103/Stm32Gpio.hpp"
-#include "platform/bsp/stm32f103_board/Board.hpp"
 
 namespace
 {
 
 enum class TestStatus : std::uint32_t
 {
-    NotStarted                = 0x0000,
+    NotStarted = 0x0000,
 
-    OutputConfigured          = 0x0001,
-    OutputLowPassed           = 0x0002,
-    OutputHighPassed          = 0x0003,
+    OutputConfigured = 0x0001,
+    OutputLowPassed = 0x0002,
+    OutputHighPassed = 0x0003,
 
-    InputConfigured           = 0x0004,
-    CallbackRegistered        = 0x0005,
-    InterruptEnabled          = 0x0006,
+    InputConfigured = 0x0004,
+    CallbackRegistered = 0x0005,
+    InterruptEnabled = 0x0006,
 
-    OutputDrivenLow           = 0x0007,
-    OutputDrivenHigh          = 0x0008,
+    OutputDrivenLow = 0x0007,
+    OutputDrivenHigh = 0x0008,
 
-    InterruptPassed           = 0x0009,
+    InterruptPassed = 0x0009,
 
-    Passed                    = 0xAA55,
+    Passed = 0xAA55,
 
-    OutputConfigureFailed     = 0x1001,
-    OutputWriteLowFailed      = 0x1002,
-    OutputReadLowFailed       = 0x1003,
-    OutputLowCheckFailed      = 0x1004,
+    OutputConfigureFailed = 0x1001,
+    OutputWriteLowFailed = 0x1002,
+    OutputReadLowFailed = 0x1003,
+    OutputLowCheckFailed = 0x1004,
 
-    OutputWriteHighFailed     = 0x1005,
-    OutputReadHighFailed      = 0x1006,
-    OutputHighCheckFailed     = 0x1007,
+    OutputWriteHighFailed = 0x1005,
+    OutputReadHighFailed = 0x1006,
+    OutputHighCheckFailed = 0x1007,
 
-    InputConfigureFailed      = 0x2001,
-    CallbackRegisterFailed    = 0x2002,
-    InterruptEnableFailed     = 0x2003,
+    InputConfigureFailed = 0x2001,
+    CallbackRegisterFailed = 0x2002,
+    InterruptEnableFailed = 0x2003,
 
-    InterruptTimeout          = 0x3001
+    InterruptTimeout = 0x3001
 };
 
 volatile TestStatus g_gpio_test_status = TestStatus::NotStarted;
@@ -115,17 +115,13 @@ int main()
     platform::stm32f103::Stm32Gpio output(GPIOC, GPIO_PIN_13);
 
     platform::hal::GpioConfig outputConfig{};
-    outputConfig.direction =
-        platform::hal::GpioDirection::Output;
+    outputConfig.direction = platform::hal::GpioDirection::Output;
 
-    outputConfig.pull =
-        platform::hal::GpioPull::None;
+    outputConfig.pull = platform::hal::GpioPull::None;
 
-    outputConfig.initialState =
-        platform::hal::GpioState::Low;
+    outputConfig.initialState = platform::hal::GpioState::Low;
 
-    outputConfig.interruptEdge =
-        platform::hal::GpioInterruptEdge::None;
+    outputConfig.interruptEdge = platform::hal::GpioInterruptEdge::None;
 
     if (!output.configure(outputConfig))
     {
@@ -199,17 +195,13 @@ int main()
     platform::stm32f103::Stm32Gpio input(GPIOA, GPIO_PIN_0);
 
     platform::hal::GpioConfig inputConfig{};
-    inputConfig.direction =
-        platform::hal::GpioDirection::Input;
+    inputConfig.direction = platform::hal::GpioDirection::Input;
 
-    inputConfig.pull =
-        platform::hal::GpioPull::PullDown;
+    inputConfig.pull = platform::hal::GpioPull::PullDown;
 
-    inputConfig.initialState =
-        platform::hal::GpioState::Low;
+    inputConfig.initialState = platform::hal::GpioState::Low;
 
-    inputConfig.interruptEdge =
-        platform::hal::GpioInterruptEdge::Rising;
+    inputConfig.interruptEdge = platform::hal::GpioInterruptEdge::Rising;
 
     if (!input.configure(inputConfig))
     {
@@ -223,9 +215,7 @@ int main()
      * 5. REGISTER INTERRUPT CALLBACK
      * ================================================================
      */
-    if (!input.registerInterruptCallback(
-            gpioInterruptCallback,
-            nullptr))
+    if (!input.registerInterruptCallback(gpioInterruptCallback, nullptr))
     {
         testFailure(TestStatus::CallbackRegisterFailed);
     }
@@ -261,9 +251,7 @@ int main()
     /*
      * Allow the signal to settle.
      */
-    for (volatile std::uint32_t i = 0U;
-         i < 1000U;
-         ++i)
+    for (volatile std::uint32_t i = 0U; i < 1000U; ++i)
     {
         __asm volatile("nop");
     }

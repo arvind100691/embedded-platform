@@ -27,7 +27,6 @@
 /* #define HAL_TIM_MODULE_ENABLED */
 /* #define HAL_IWDG_MODULE_ENABLED */
 
-
 /* ============================================================================
  * Oscillator configuration
  * ========================================================================== */
@@ -78,7 +77,6 @@
 #define LSE_STARTUP_TIMEOUT 5000U
 #endif
 
-
 /* ============================================================================
  * System configuration
  * ========================================================================== */
@@ -96,7 +94,6 @@
 
 #define PREFETCH_ENABLE 1U
 
-
 /* ============================================================================
  * HAL assertions
  * ========================================================================== */
@@ -113,42 +110,35 @@
 
 #ifdef USE_FULL_ASSERT
 
-#define assert_param(expr) \
-    ((expr) ? (void)0U : \
-     assert_failed((uint8_t *)__FILE__, __LINE__))
+#define assert_param(expr) ((expr) ? (void)0U : assert_failed((uint8_t*)__FILE__, __LINE__))
 
-void assert_failed(
-    uint8_t* file,
-    uint32_t line);
+void assert_failed(uint8_t* file, uint32_t line);
 
 #else
 
-#define assert_param(expr) \
-    ((void)0U)
+#define assert_param(expr) ((void)0U)
 
 #endif
-
 
 /* ============================================================================
  * HAL register callback configuration
  * ========================================================================== */
 
-#define USE_HAL_ADC_REGISTER_CALLBACKS       0U
-#define USE_HAL_CAN_REGISTER_CALLBACKS       0U
-#define USE_HAL_I2C_REGISTER_CALLBACKS       0U
-#define USE_HAL_I2S_REGISTER_CALLBACKS       0U
-#define USE_HAL_IRDA_REGISTER_CALLBACKS      0U
-#define USE_HAL_PCCARD_REGISTER_CALLBACKS    0U
-#define USE_HAL_PCD_REGISTER_CALLBACKS       0U
-#define USE_HAL_RTC_REGISTER_CALLBACKS       0U
+#define USE_HAL_ADC_REGISTER_CALLBACKS 0U
+#define USE_HAL_CAN_REGISTER_CALLBACKS 0U
+#define USE_HAL_I2C_REGISTER_CALLBACKS 0U
+#define USE_HAL_I2S_REGISTER_CALLBACKS 0U
+#define USE_HAL_IRDA_REGISTER_CALLBACKS 0U
+#define USE_HAL_PCCARD_REGISTER_CALLBACKS 0U
+#define USE_HAL_PCD_REGISTER_CALLBACKS 0U
+#define USE_HAL_RTC_REGISTER_CALLBACKS 0U
 #define USE_HAL_SMARTCARD_REGISTER_CALLBACKS 0U
-#define USE_HAL_SPI_REGISTER_CALLBACKS       0U
-#define USE_HAL_SRAM_REGISTER_CALLBACKS      0U
-#define USE_HAL_TIM_REGISTER_CALLBACKS       0U
-#define USE_HAL_UART_REGISTER_CALLBACKS      0U
-#define USE_HAL_USART_REGISTER_CALLBACKS     0U
-#define USE_HAL_WWDG_REGISTER_CALLBACKS      0U
-
+#define USE_HAL_SPI_REGISTER_CALLBACKS 0U
+#define USE_HAL_SRAM_REGISTER_CALLBACKS 0U
+#define USE_HAL_TIM_REGISTER_CALLBACKS 0U
+#define USE_HAL_UART_REGISTER_CALLBACKS 0U
+#define USE_HAL_USART_REGISTER_CALLBACKS 0U
+#define USE_HAL_WWDG_REGISTER_CALLBACKS 0U
 
 /* ============================================================================
  * HAL peripheral headers

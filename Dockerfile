@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     git \
     python3 \
     python3-pip \
+    pipx \
     gcc-arm-none-eabi \
     binutils-arm-none-eabi \
     gdb-multiarch \
@@ -21,5 +22,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
+
+ENV PATH="/root/.local/bin:${PATH}"
+
+RUN pipx install cmake-format --include-deps
+RUN pipx ensurepath
 
 CMD ["/bin/bash"]

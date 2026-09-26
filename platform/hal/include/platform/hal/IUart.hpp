@@ -37,9 +37,7 @@ struct UartConfig
 
     UartStopBits stopBits{UartStopBits::One};
 
-    UartFlowControl flowControl{
-        UartFlowControl::None
-    };
+    UartFlowControl flowControl{UartFlowControl::None};
 };
 
 class IUart
@@ -47,18 +45,13 @@ class IUart
 public:
     virtual ~IUart() = default;
 
-    virtual platform::Result<void> configure(
-        const UartConfig& config) = 0;
+    virtual platform::Result<void> configure(const UartConfig& config) = 0;
 
-    virtual platform::Result<void> transmit(
-        const std::uint8_t* data,
-        std::size_t size,
-        std::uint32_t timeoutMs) = 0;
+    virtual platform::Result<void> transmit(const std::uint8_t* data, std::size_t size,
+                                            std::uint32_t timeoutMs) = 0;
 
-    virtual platform::Result<std::size_t> receive(
-        std::uint8_t* data,
-        std::size_t size,
-        std::uint32_t timeoutMs) = 0;
+    virtual platform::Result<std::size_t> receive(std::uint8_t* data, std::size_t size,
+                                                  std::uint32_t timeoutMs) = 0;
 };
 
 } // namespace platform::hal

@@ -42,9 +42,7 @@ struct GpioConfig
 
     GpioState initialState{GpioState::Low};
 
-    GpioInterruptEdge interruptEdge{
-        GpioInterruptEdge::None
-    };
+    GpioInterruptEdge interruptEdge{GpioInterruptEdge::None};
 };
 
 class IGpio
@@ -52,19 +50,16 @@ class IGpio
 public:
     virtual ~IGpio() = default;
 
-    virtual platform::Result<void> configure(
-        const GpioConfig& config) = 0;
+    virtual platform::Result<void> configure(const GpioConfig& config) = 0;
 
-    virtual platform::Result<void> write(
-        GpioState state) = 0;
+    virtual platform::Result<void> write(GpioState state) = 0;
 
     virtual platform::Result<GpioState> read() const = 0;
 
     virtual platform::Result<void> toggle() = 0;
 
-    virtual platform::Result<void> registerInterruptCallback(
-        GpioInterruptCallback callback,
-        void* context) = 0;
+    virtual platform::Result<void> registerInterruptCallback(GpioInterruptCallback callback,
+                                                             void* context) = 0;
 
     virtual platform::Result<void> enableInterrupt() = 0;
 

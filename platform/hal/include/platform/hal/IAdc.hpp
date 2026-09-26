@@ -17,9 +17,7 @@ enum class AdcResolution
 
 struct AdcConfig
 {
-    AdcResolution resolution{
-        AdcResolution::Bits12
-    };
+    AdcResolution resolution{AdcResolution::Bits12};
 };
 
 class IAdc
@@ -27,11 +25,9 @@ class IAdc
 public:
     virtual ~IAdc() = default;
 
-    virtual platform::Result<void> configure(
-        const AdcConfig& config) = 0;
+    virtual platform::Result<void> configure(const AdcConfig& config) = 0;
 
-    virtual platform::Result<std::uint32_t> read(
-        std::uint32_t channel) = 0;
+    virtual platform::Result<std::uint32_t> read(std::uint32_t channel) = 0;
 };
 
 } // namespace platform::hal

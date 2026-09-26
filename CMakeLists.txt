@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(EmbeddedPlatform
+project(
+    EmbeddedPlatform
     VERSION 0.1.0
     DESCRIPTION "Portable layered embedded platform"
     LANGUAGES C CXX ASM
@@ -24,23 +25,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Project options
 # ============================================================================
 
-option(
-    BUILD_TESTING
-    "Build unit and integration tests"
-    ON
-)
+option(BUILD_TESTING "Build unit and integration tests" ON)
 
-option(
-    BUILD_STM32F103
-    "Build STM32F103 firmware"
-    OFF
-)
+option(BUILD_STM32F103 "Build STM32F103 firmware" OFF)
 
-option(
-    BUILD_STM32F103_INTEGRATION_TESTS
-    "Build STM32F103 hardware integration tests"
-    OFF
-)
+option(BUILD_STM32F103_INTEGRATION_TESTS "Build STM32F103 hardware integration tests" OFF)
 
 # ============================================================================
 # Platform layers
@@ -56,18 +45,11 @@ add_subdirectory(platform/os)
 # Added exactly once.
 # ============================================================================
 
-if(
-    BUILD_STM32F103
-    OR BUILD_STM32F103_INTEGRATION_TESTS
-)
+if(BUILD_STM32F103 OR BUILD_STM32F103_INTEGRATION_TESTS)
 
-    add_subdirectory(
-        platform/ports/stm32/stm32f103
-    )
+    add_subdirectory(platform/ports/stm32/stm32f103)
 
-    add_subdirectory(
-        platform/bsp/stm32f103_board
-    )
+    add_subdirectory(platform/bsp/stm32f103_board)
 
 endif()
 
@@ -75,9 +57,7 @@ endif()
 # Application
 # ============================================================================
 
-add_subdirectory(
-    app
-)
+add_subdirectory(app)
 
 # ============================================================================
 # Host tests
@@ -89,9 +69,7 @@ if(BUILD_TESTING)
 
     enable_testing()
 
-    add_subdirectory(
-        tests
-    )
+    add_subdirectory(tests)
 
 endif()
 
@@ -101,8 +79,6 @@ endif()
 
 if(BUILD_STM32F103_INTEGRATION_TESTS)
 
-    add_subdirectory(
-        tests/integration/platform/stm32f103
-    )
+    add_subdirectory(tests/integration/platform/stm32f103)
 
 endif()

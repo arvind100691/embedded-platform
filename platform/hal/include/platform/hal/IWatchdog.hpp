@@ -17,8 +17,7 @@ class IWatchdog
 public:
     virtual ~IWatchdog() = default;
 
-    virtual platform::Result<void> configure(
-        const WatchdogConfig& config) = 0;
+    virtual platform::Result<void> configure(const WatchdogConfig& config) = 0;
 
     virtual platform::Result<void> start() = 0;
 

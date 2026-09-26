@@ -1,6 +1,6 @@
-#include "app/Application.hpp"
-
 #include "platform/bsp/stm32f103_board/Board.hpp"
+
+#include "app/Application.hpp"
 
 int main()
 {
@@ -8,8 +8,7 @@ int main()
 
     init();
 
-    app::Application application(
-        statusLed());
+    app::Application application(statusLed());
 
     if (!application.initialize())
     {

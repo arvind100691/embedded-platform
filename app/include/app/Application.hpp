@@ -8,8 +8,7 @@ namespace app
 class Application
 {
 public:
-    explicit Application(
-        platform::hal::IGpio& statusLed);
+    explicit Application(platform::hal::IGpio& statusLed);
 
     bool initialize();
 

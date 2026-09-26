@@ -7,16 +7,14 @@
 class MockGpio final : public platform::hal::IGpio
 {
 public:
-    platform::Result<void> configure(
-        const platform::hal::GpioConfig& config) override
+    platform::Result<void> configure(const platform::hal::GpioConfig& config) override
     {
         lastConfig_ = config;
         configureCallCount_++;
 
         if (!configureShouldSucceed_)
         {
-            return platform::Result<void>::failure(
-                configureError_);
+            return platform::Result<void>::failure(configureError_);
         }
 
         state_ = config.initialState;
@@ -24,8 +22,7 @@ public:
         return platform::Result<void>::success();
     }
 
-    platform::Result<void> write(
-        platform::hal::GpioState state) override
+    platform::Result<void> write(platform::hal::GpioState state) override
     {
         state_ = state;
         writeCallCount_++;
@@ -33,29 +30,23 @@ public:
         return platform::Result<void>::success();
     }
 
-    platform::Result<platform::hal::GpioState> read()
-        const override
+    platform::Result<platform::hal::GpioState> read() const override
     {
-        return platform::Result<
-            platform::hal::GpioState
-        >::success(state_);
+        return platform::Result<platform::hal::GpioState>::success(state_);
     }
 
     platform::Result<void> toggle() override
     {
         toggleCallCount_++;
 
-        state_ =
-            state_ == platform::hal::GpioState::High
-                ? platform::hal::GpioState::Low
-                : platform::hal::GpioState::High;
+        state_ = state_ == platform::hal::GpioState::High ? platform::hal::GpioState::Low
+                                                          : platform::hal::GpioState::High;
 
         return platform::Result<void>::success();
     }
 
-    platform::Result<void> registerInterruptCallback(
-        platform::hal::GpioInterruptCallback callback,
-        void* context) override
+    platform::Result<void> registerInterruptCallback(platform::hal::GpioInterruptCallback callback,
+                                                     void* context) override
     {
         callback_ = callback;
         callbackContext_ = context;
@@ -77,8 +68,7 @@ public:
         return platform::Result<void>::success();
     }
 
-    void setConfigureFailure(
-        platform::ErrorCode error)
+    void setConfigureFailure(platform::ErrorCode error)
     {
         configureShouldSucceed_ = false;
         configureError_ = error;
@@ -90,8 +80,7 @@ public:
     }
 
     [[nodiscard]]
-    const platform::hal::GpioConfig&
-    lastConfig() const
+    const platform::hal::GpioConfig& lastConfig() const
     {
         return lastConfig_;
     }
@@ -129,17 +118,13 @@ public:
 private:
     platform::hal::GpioConfig lastConfig_{};
 
-    platform::hal::GpioState state_{
-        platform::hal::GpioState::Low
-    };
+    platform::hal::GpioState state_{platform::hal::GpioState::Low};
 
     platform::hal::GpioInterruptCallback callback_{nullptr};
 
     void* callbackContext_{nullptr};
 
-    platform::ErrorCode configureError_{
-        platform::ErrorCode::HardwareFault
-    };
+    platform::ErrorCode configureError_{platform::ErrorCode::HardwareFault};
 
     bool configureShouldSucceed_{true};
 

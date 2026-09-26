@@ -9,8 +9,7 @@
 namespace platform
 {
 
-template <typename T>
-class Result
+template <typename T> class Result
 {
 public:
     static Result success(T value)
@@ -56,8 +55,8 @@ public:
 
 private:
     Result(std::optional<T> value, ErrorCode error)
-        : value_(std::move(value)),
-          error_(error)
+        : value_(std::move(value))
+        , error_(error)
     {
     }
 
@@ -65,8 +64,7 @@ private:
     ErrorCode error_{ErrorCode::InternalError};
 };
 
-template <>
-class Result<void>
+template <> class Result<void>
 {
 public:
     static Result success()

@@ -19,11 +19,9 @@ class IPwm
 public:
     virtual ~IPwm() = default;
 
-    virtual platform::Result<void> configure(
-        const PwmConfig& config) = 0;
+    virtual platform::Result<void> configure(const PwmConfig& config) = 0;
 
-    virtual platform::Result<void> setDutyCycle(
-        std::uint16_t dutyCyclePermille) = 0;
+    virtual platform::Result<void> setDutyCycle(std::uint16_t dutyCyclePermille) = 0;
 
     virtual platform::Result<void> enable() = 0;
 

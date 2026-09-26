@@ -13,16 +13,13 @@ enum class TimerMode
     Periodic
 };
 
-using TimerCallback =
-    void (*)(void* context);
+using TimerCallback = void (*)(void* context);
 
 struct TimerConfig
 {
     std::uint32_t periodUs{1'000};
 
-    TimerMode mode{
-        TimerMode::Periodic
-    };
+    TimerMode mode{TimerMode::Periodic};
 };
 
 class ITimer
@@ -30,12 +27,9 @@ class ITimer
 public:
     virtual ~ITimer() = default;
 
-    virtual platform::Result<void> configure(
-        const TimerConfig& config) = 0;
+    virtual platform::Result<void> configure(const TimerConfig& config) = 0;
 
-    virtual platform::Result<void> registerCallback(
-        TimerCallback callback,
-        void* context) = 0;
+    virtual platform::Result<void> registerCallback(TimerCallback callback, void* context) = 0;
 
     virtual platform::Result<void> start() = 0;
 

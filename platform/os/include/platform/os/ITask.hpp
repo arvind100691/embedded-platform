@@ -16,8 +16,7 @@ public:
 
     virtual platform::Result<void> stop() = 0;
 
-    virtual platform::Result<void> delay(
-        std::uint32_t milliseconds) = 0;
+    virtual platform::Result<void> delay(std::uint32_t milliseconds) = 0;
 };
 
 } // namespace platform::os

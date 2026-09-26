@@ -1,8 +1,7 @@
-#include <type_traits>
+#include "platform/common/Types.hpp"
 
 #include <gtest/gtest.h>
-
-#include "platform/common/Types.hpp"
+#include <type_traits>
 
 namespace
 {
@@ -27,8 +26,7 @@ TEST(TypesTest, FixedWidthTypesHaveExpectedSize)
 
 TEST(TypesTest, UInt32IsUnsigned)
 {
-    EXPECT_TRUE(
-        std::is_unsigned_v<platform::UInt32>);
+    EXPECT_TRUE(std::is_unsigned_v<platform::UInt32>);
 }
 
 } // namespace

@@ -1,0 +1,113 @@
+BasedOnStyle: LLVM
+
+Language: Cpp
+
+# ============================================================================
+# Indentation
+# ============================================================================
+
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+# ============================================================================
+# Line length
+# ============================================================================
+
+ColumnLimit: 100
+
+# ============================================================================
+# Braces
+# ============================================================================
+
+BreakBeforeBraces: Allman
+
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: false
+
+# ============================================================================
+# Pointers / References
+# ============================================================================
+
+PointerAlignment: Left
+ReferenceAlignment: Left
+DerivePointerAlignment: false
+
+# ============================================================================
+# Spaces
+# ============================================================================
+
+SpaceBeforeParens: ControlStatements
+
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+
+# ============================================================================
+# Namespace
+# ============================================================================
+
+NamespaceIndentation: None
+
+# ============================================================================
+# Access modifiers
+# ============================================================================
+
+AccessModifierOffset: -4
+IndentAccessModifiers: false
+
+# ============================================================================
+# Includes
+# ============================================================================
+
+IncludeBlocks: Regroup
+SortIncludes: CaseSensitive
+
+IncludeCategories:
+  - Regex: '^<.*>'
+    Priority: 1
+
+  - Regex: '^"platform/.*'
+    Priority: 2
+
+  - Regex: '^"app/.*'
+    Priority: 3
+
+  - Regex: '^".*'
+    Priority: 4
+
+# ============================================================================
+# Constructors
+# ============================================================================
+
+ConstructorInitializerIndentWidth: 4
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+BreakConstructorInitializers: BeforeComma
+
+# ============================================================================
+# C++ style
+# ============================================================================
+
+Cpp11BracedListStyle: true
+
+# ============================================================================
+# Comments
+# ============================================================================
+
+ReflowComments: true
+
+# ============================================================================
+# Empty lines
+# ============================================================================
+
+MaxEmptyLinesToKeep: 1
+
+# ============================================================================
+# Miscellaneous
+# ============================================================================
+
+DeriveLineEnding: false
+UseCRLF: false

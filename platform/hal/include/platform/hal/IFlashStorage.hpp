@@ -26,19 +26,13 @@ public:
 
     virtual platform::Result<FlashInfo> getInfo() const = 0;
 
-    virtual platform::Result<void> erase(
-        std::uint32_t address,
-        std::size_t size) = 0;
+    virtual platform::Result<void> erase(std::uint32_t address, std::size_t size) = 0;
 
-    virtual platform::Result<void> write(
-        std::uint32_t address,
-        const std::uint8_t* data,
-        std::size_t size) = 0;
+    virtual platform::Result<void> write(std::uint32_t address, const std::uint8_t* data,
+                                         std::size_t size) = 0;
 
-    virtual platform::Result<void> read(
-        std::uint32_t address,
-        std::uint8_t* data,
-        std::size_t size) = 0;
+    virtual platform::Result<void> read(std::uint32_t address, std::uint8_t* data,
+                                        std::size_t size) = 0;
 };
 
 } // namespace platform::hal

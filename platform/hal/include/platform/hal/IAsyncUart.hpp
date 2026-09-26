@@ -15,27 +15,19 @@ enum class UartTransferStatus
     Error
 };
 
-using UartTransferCallback =
-    void (*)(UartTransferStatus status,
-             std::size_t transferredBytes,
-             void* context);
+using UartTransferCallback = void (*)(UartTransferStatus status, std::size_t transferredBytes,
+                                      void* context);
 
 class IAsyncUart
 {
 public:
     virtual ~IAsyncUart() = default;
 
-    virtual platform::Result<void> transmitAsync(
-        const std::uint8_t* data,
-        std::size_t size,
-        UartTransferCallback callback,
-        void* context) = 0;
+    virtual platform::Result<void> transmitAsync(const std::uint8_t* data, std::size_t size,
+                                                 UartTransferCallback callback, void* context) = 0;
 
-    virtual platform::Result<void> receiveAsync(
-        std::uint8_t* data,
-        std::size_t size,
-        UartTransferCallback callback,
-        void* context) = 0;
+    virtual platform::Result<void> receiveAsync(std::uint8_t* data, std::size_t size,
+                                                UartTransferCallback callback, void* context) = 0;
 
     virtual platform::Result<void> cancelTransmit() = 0;
 

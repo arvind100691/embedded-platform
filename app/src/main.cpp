@@ -15,9 +15,7 @@ int main()
 
     if (!result)
     {
-        std::cout << "Error: "
-                  << static_cast<int>(result.error())
-                  << '\n';
+        std::cout << "Error: " << static_cast<int>(result.error()) << '\n';
 
         return 1;
     }
