@@ -4,11 +4,9 @@
 
 int main()
 {
-    using namespace platform::bsp::stm32f103_board;
+    platform::bsp::stm32f103_board::init();
 
-    init();
-
-    app::Application application(statusLed());
+    app::Application application(platform::bsp::stm32f103_board::statusLed());
 
     if (!application.initialize())
     {

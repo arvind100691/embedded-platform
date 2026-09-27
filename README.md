@@ -194,6 +194,10 @@ Testing is part of the architecture rather than an afterthought.
 
 Run primarily on the host and isolate the component under test using mocks/fakes where appropriate.
 
+### Clang and Cmake format
+
+Run this  ./tools/scripts/format.sh
+
 ### Integration tests
 
 Verify interaction between multiple platform layers, middleware components, or services.

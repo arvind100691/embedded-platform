@@ -1,0 +1,25 @@
+{
+    "version": 4,
+    "configurations": [
+        {
+            "name": "STM32F103",
+            "compilerPath": "/usr/bin/arm-none-eabi-g++",
+            "intelliSenseMode": "linux-gcc-arm",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "compileCommands": [
+                "${workspaceFolder}/build/stm32f103-gpio-test/compile_commands.json"
+            ]
+        },
+        {
+            "name": "Host",
+            "compilerPath": "/usr/bin/arm-none-eabi-gcc",
+            "intelliSenseMode": "linux-gcc-x64",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "compileCommands": [
+                "${workspaceFolder}/build/host-debug/compile_commands.json"
+            ]
+        }
+    ]
+}

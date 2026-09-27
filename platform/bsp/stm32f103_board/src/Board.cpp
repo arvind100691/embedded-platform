@@ -7,9 +7,7 @@
 namespace
 {
 
-using platform::stm32f103::Stm32Gpio;
-
-Stm32Gpio g_statusLed(GPIOC, GPIO_PIN_13);
+platform::stm32f103::Stm32Gpio g_statusLed(GPIOC, GPIO_PIN_13);
 
 void SystemClock_Config()
 {

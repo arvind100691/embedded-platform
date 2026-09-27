@@ -11,10 +11,10 @@
         "vscode": {
             "extensions": [
                 "ms-vscode.cpptools",
+                "ms-vscode.cpptools-extension-pack",
                 "ms-vscode.cmake-tools",
                 "matepek.vscode-catch2-test-adapter",
                 "marus25.cortex-debug",
-                "llvm-vs-code-extensions.vscode-clangd",
                 "EditorConfig.EditorConfig",
                 "usernamehw.errorlens",
                 "eamodio.gitlens"
@@ -32,12 +32,7 @@
                 "search.exclude": {
                     "**/build": true,
                     "**/.git": true
-                },
-                "clangd.arguments": [
-                    "--background-index",
-                    "--clang-tidy",
-                    "--completion-style=detailed"
-                ]
+                }
             }
         }
     }
