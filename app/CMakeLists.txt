@@ -19,20 +19,6 @@ endif()
 if(BUILD_STM32F103)
 
     # ------------------------------------------------------------------------
-    # STM32F103 startup file
-    # ------------------------------------------------------------------------
-
-    set(STM32F103_STARTUP_FILE
-        ${CMAKE_SOURCE_DIR}/external/stm32cube-f1/Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xb.s
-    )
-
-    if(NOT EXISTS "${STM32F103_STARTUP_FILE}")
-
-        message(FATAL_ERROR "STM32F103 startup file not found: " "${STM32F103_STARTUP_FILE}")
-
-    endif()
-
-    # ------------------------------------------------------------------------
     # Firmware executable
     # ------------------------------------------------------------------------
 
@@ -45,6 +31,10 @@ if(BUILD_STM32F103)
         embedded_firmware PROPERTIES OUTPUT_NAME "embedded_firmware" SUFFIX ".elf"
     )
 
+    # ------------------------------------------------------------------------
+    # Includes
+    # ------------------------------------------------------------------------
+
     target_include_directories(embedded_firmware PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
     # ------------------------------------------------------------------------
@@ -56,58 +46,18 @@ if(BUILD_STM32F103)
                                   bsp_stm32f103_board
     )
 
-    # ------------------------------------------------------------------------
-    # ARM compiler options
-    # ------------------------------------------------------------------------
-
-    target_compile_options(
-        embedded_firmware PRIVATE -mcpu=cortex-m3 -mthumb -ffunction-sections -fdata-sections
-    )
-
-    target_compile_options(
-        embedded_firmware PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-exceptions -fno-rtti
-                                  -fno-use-cxa-atexit -fno-threadsafe-statics >
-    )
+    target_compile_features(embedded_firmware PRIVATE cxx_std_17)
 
     # ------------------------------------------------------------------------
-    # ARM linker options
+    # STM32F103 compiler + linker configuration
     # ------------------------------------------------------------------------
 
-    set(STM32F103_LINKER_SCRIPT
-        ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/startup/STM32F103C8Tx_FLASH.ld
-    )
-
-    if(NOT EXISTS "${STM32F103_LINKER_SCRIPT}")
-
-        message(FATAL_ERROR "STM32F103 linker script not found: " "${STM32F103_LINKER_SCRIPT}")
-
-    endif()
-
-    target_link_options(
-        embedded_firmware
-        PRIVATE
-        -mcpu=cortex-m3
-        -mthumb
-        -T${STM32F103_LINKER_SCRIPT}
-        -Wl,--gc-sections
-        -Wl,--print-memory-usage
-        -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/embedded_firmware.map
-        --specs=nano.specs
-    )
+    stm32f103_configure_executable(embedded_firmware)
 
     # ------------------------------------------------------------------------
-    # Generate HEX/BIN
+    # HEX / BIN generation
     # ------------------------------------------------------------------------
 
-    add_custom_command(
-        TARGET embedded_firmware
-        POST_BUILD
-        COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:embedded_firmware>
-                ${CMAKE_CURRENT_BINARY_DIR}/embedded_firmware.hex
-        COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:embedded_firmware>
-                ${CMAKE_CURRENT_BINARY_DIR}/embedded_firmware.bin
-        COMMAND ${CMAKE_SIZE} $<TARGET_FILE:embedded_firmware>
-        COMMENT "Generating STM32F103 firmware images"
-    )
+    stm32f103_add_firmware_artifacts(embedded_firmware)
 
 endif()

@@ -81,7 +81,7 @@ void gpioInterruptCallback(void* /*context*/)
  */
 bool waitForInterrupt()
 {
-    constexpr std::uint32_t kTimeoutIterations = 1'000'000U;
+    constexpr std::uint32_t kTimeoutIterations = 1'000U;
 
     std::uint32_t timeout = kTimeoutIterations;
 

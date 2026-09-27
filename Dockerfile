@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
     clang-tidy \
     cppcheck \
     gcovr \
+    usbutils \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace

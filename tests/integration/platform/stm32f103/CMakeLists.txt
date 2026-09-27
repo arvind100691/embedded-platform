@@ -1,37 +1,9 @@
 # ============================================================================
-# STM32F103 integration-test firmware
+# STM32F103 GPIO integration-test firmware
 #
-# This directory MUST NOT add the STM32F103 platform or BSP with
-# add_subdirectory(). Those targets are created by the root CMakeLists.txt.
+# The STM32F103 platform and BSP targets are created by the root
+# CMakeLists.txt. This directory must not call add_subdirectory() for them.
 # ============================================================================
-
-# ============================================================================
-# Startup file
-# ============================================================================
-
-set(STM32F103_STARTUP_FILE
-    ${CMAKE_SOURCE_DIR}/external/stm32cube-f1/Drivers/CMSIS/Device/ST/STM32F1xx/Source/Templates/gcc/startup_stm32f103xb.s
-)
-
-if(NOT EXISTS "${STM32F103_STARTUP_FILE}")
-
-    message(FATAL_ERROR "STM32F103 GCC startup file not found: " "${STM32F103_STARTUP_FILE}")
-
-endif()
-
-# ============================================================================
-# Linker script
-# ============================================================================
-
-set(STM32F103_LINKER_SCRIPT
-    ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/startup/STM32F103C8Tx_FLASH.ld
-)
-
-if(NOT EXISTS "${STM32F103_LINKER_SCRIPT}")
-
-    message(FATAL_ERROR "STM32F103 linker script not found: " "${STM32F103_LINKER_SCRIPT}")
-
-endif()
 
 # ============================================================================
 # Integration-test executable
@@ -39,18 +11,24 @@ endif()
 
 add_executable(
     stm32f103_gpio_integration_test
-    GpioIntegrationTest.cpp ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/src/stm32f1xx_it.cpp
-    ${STM32F103_STARTUP_FILE} ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
+    GpioIntegrationTest.cpp
+    # Explicitly include the interrupt vector handler object in this
+    # executable. This is intentionally kept as part of the current working
+    # solution for EXTI0_IRQHandler retention.
+    ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/src/stm32f1xx_it.cpp
+    # STM32 startup code
+    ${STM32F103_STARTUP_FILE}
+    # Newlib syscall support
+    ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
 )
 
-# Explicit ELF extension.
 set_target_properties(
     stm32f103_gpio_integration_test PROPERTIES OUTPUT_NAME "stm32f103_gpio_integration_test" SUFFIX
                                                                                              ".elf"
 )
 
 # ============================================================================
-# Include paths / dependencies
+# Integration-test include paths
 # ============================================================================
 
 target_include_directories(
@@ -58,6 +36,10 @@ target_include_directories(
     PRIVATE ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/include
             ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/include
 )
+
+# ============================================================================
+# Dependencies
+# ============================================================================
 
 target_link_libraries(
     stm32f103_gpio_integration_test PRIVATE platform_common platform_hal platform_stm32f103
@@ -67,47 +49,22 @@ target_link_libraries(
 target_compile_features(stm32f103_gpio_integration_test PRIVATE cxx_std_17)
 
 # ============================================================================
-# Compiler options
+# STM32F103 compiler + linker configuration
 # ============================================================================
 
-target_compile_options(
-    stm32f103_gpio_integration_test PRIVATE -mcpu=cortex-m3 -mthumb -ffunction-sections
-                                            -fdata-sections
-)
-
-target_compile_options(
-    stm32f103_gpio_integration_test PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-exceptions -fno-rtti
-                                            -fno-use-cxa-atexit -fno-threadsafe-statics >
-)
+stm32f103_configure_executable(stm32f103_gpio_integration_test)
 
 # ============================================================================
-# Linker options
+# Interrupt handler retention
+#
+# The integration test requires EXTI0_IRQHandler to survive
+# --gc-sections because the startup vector contains a weak default handler.
 # ============================================================================
 
-target_link_options(
-    stm32f103_gpio_integration_test
-    PRIVATE
-    -mcpu=cortex-m3
-    -mthumb
-    -T${STM32F103_LINKER_SCRIPT}
-    -Wl,--gc-sections
-    -Wl,-u,EXTI0_IRQHandler
-    -Wl,--print-memory-usage
-    -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/stm32f103_gpio_integration_test.map
-    --specs=nano.specs
-)
+target_link_options(stm32f103_gpio_integration_test PRIVATE -Wl,-u,EXTI0_IRQHandler)
 
 # ============================================================================
-# Post-build firmware artifacts
+# HEX / BIN generation
 # ============================================================================
 
-add_custom_command(
-    TARGET stm32f103_gpio_integration_test
-    POST_BUILD
-    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:stm32f103_gpio_integration_test>
-            ${CMAKE_CURRENT_BINARY_DIR}/stm32f103_gpio_integration_test.hex
-    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:stm32f103_gpio_integration_test>
-            ${CMAKE_CURRENT_BINARY_DIR}/stm32f103_gpio_integration_test.bin
-    COMMAND ${CMAKE_SIZE} $<TARGET_FILE:stm32f103_gpio_integration_test>
-    COMMENT "Generating STM32F103 GPIO integration-test firmware"
-)
+stm32f103_add_firmware_artifacts(stm32f103_gpio_integration_test)
