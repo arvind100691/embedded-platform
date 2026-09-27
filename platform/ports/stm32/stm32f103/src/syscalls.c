@@ -1,8 +1,17 @@
 #include <errno.h>
+#include <stdint.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <stdint.h>
+void _exit(int status)
+{
+    (void)status;
+
+    while (1)
+    {
+        __asm volatile("nop");
+    }
+}
 
 int _close(int file)
 {
@@ -71,30 +80,14 @@ int _kill(int pid, int sig)
     return -1;
 }
 
-void* _sbrk(ptrdiff_t incr)
+void* _sbrk(ptrdiff_t increment)
 {
-    extern char _end;
-    extern char _estack;
+    (void)increment;
 
-    static char* heapEnd = NULL;
-
-    char* previousHeapEnd;
-
-    if (heapEnd == NULL)
-    {
-        heapEnd = &_end;
-    }
-
-    previousHeapEnd = heapEnd;
-
-    if ((heapEnd + incr) >= &_estack)
-    {
-        errno = ENOMEM;
-
-        return (void*)-1;
-    }
-
-    heapEnd += incr;
-
-    return previousHeapEnd;
+    /*
+     * Dynamic allocation is not supported by the current
+     * embedded runtime policy.
+     */
+    errno = ENOMEM;
+    return (void*)-1;
 }

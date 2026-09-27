@@ -40,7 +40,7 @@ endif()
 add_executable(
     stm32f103_gpio_integration_test
     GpioIntegrationTest.cpp ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/src/stm32f1xx_it.cpp
-    ${STM32F103_STARTUP_FILE}
+    ${STM32F103_STARTUP_FILE} ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
 )
 
 # Explicit ELF extension.
@@ -71,15 +71,13 @@ target_compile_features(stm32f103_gpio_integration_test PRIVATE cxx_std_17)
 # ============================================================================
 
 target_compile_options(
-    stm32f103_gpio_integration_test
-    PRIVATE -mcpu=cortex-m3
-            -mthumb
-            -ffunction-sections
-            -fdata-sections
-            -fno-exceptions
-            -fno-rtti
-            -fno-use-cxa-atexit
-            -fno-threadsafe-statics
+    stm32f103_gpio_integration_test PRIVATE -mcpu=cortex-m3 -mthumb -ffunction-sections
+                                            -fdata-sections
+)
+
+target_compile_options(
+    stm32f103_gpio_integration_test PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-exceptions -fno-rtti
+                                            -fno-use-cxa-atexit -fno-threadsafe-statics >
 )
 
 # ============================================================================
@@ -97,7 +95,6 @@ target_link_options(
     -Wl,--print-memory-usage
     -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/stm32f103_gpio_integration_test.map
     --specs=nano.specs
-    --specs=nosys.specs
 )
 
 # ============================================================================

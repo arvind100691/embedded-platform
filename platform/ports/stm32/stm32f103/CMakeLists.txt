@@ -80,13 +80,10 @@ target_link_libraries(platform_stm32f103 PUBLIC platform_hal stm32f1xx_hal)
 target_compile_features(platform_stm32f103 PUBLIC cxx_std_17)
 
 target_compile_options(
-    platform_stm32f103
-    PRIVATE -mcpu=cortex-m3
-            -mthumb
-            -ffunction-sections
-            -fdata-sections
-            -fno-exceptions
-            -fno-rtti
-            -fno-use-cxa-atexit
-            -fno-threadsafe-statics
+    platform_stm32f103 PRIVATE -mcpu=cortex-m3 -mthumb -ffunction-sections -fdata-sections
+)
+
+target_compile_options(
+    platform_stm32f103 PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-exceptions -fno-rtti
+                               -fno-use-cxa-atexit -fno-threadsafe-statics >
 )

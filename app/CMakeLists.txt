@@ -38,6 +38,7 @@ if(BUILD_STM32F103)
 
     add_executable(
         embedded_firmware src/Application.cpp src/target_main.cpp ${STM32F103_STARTUP_FILE}
+                          ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
     )
 
     set_target_properties(
@@ -60,15 +61,12 @@ if(BUILD_STM32F103)
     # ------------------------------------------------------------------------
 
     target_compile_options(
-        embedded_firmware
-        PRIVATE -mcpu=cortex-m3
-                -mthumb
-                -ffunction-sections
-                -fdata-sections
-                -fno-exceptions
-                -fno-rtti
-                -fno-use-cxa-atexit
-                -fno-threadsafe-statics
+        embedded_firmware PRIVATE -mcpu=cortex-m3 -mthumb -ffunction-sections -fdata-sections
+    )
+
+    target_compile_options(
+        embedded_firmware PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -fno-exceptions -fno-rtti
+                                  -fno-use-cxa-atexit -fno-threadsafe-statics >
     )
 
     # ------------------------------------------------------------------------
@@ -95,7 +93,6 @@ if(BUILD_STM32F103)
         -Wl,--print-memory-usage
         -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/embedded_firmware.map
         --specs=nano.specs
-        --specs=nosys.specs
     )
 
     # ------------------------------------------------------------------------
