@@ -68,6 +68,11 @@ platform::hal::IGpio& statusLed()
     return g_statusLed;
 }
 
+platform::hal::IAsyncUart& consoleAsyncUart()
+{
+    return g_consoleUart;
+}
+
 platform::hal::IUart& consoleUart()
 {
     return g_consoleUart;

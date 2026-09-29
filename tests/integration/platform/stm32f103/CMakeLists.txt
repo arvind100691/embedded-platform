@@ -109,3 +109,43 @@ target_compile_features(stm32f103_uart_integration_test PRIVATE cxx_std_17)
 stm32f103_configure_executable(stm32f103_uart_integration_test)
 
 stm32f103_add_firmware_artifacts(stm32f103_uart_integration_test)
+
+# ============================================================================
+# STM32F103 asynchronous UART integration-test firmware
+#
+# Hardware loopback:
+#     PA9 (USART1 TX) <-> PA10 (USART1 RX)
+# ============================================================================
+
+add_executable(
+    stm32f103_async_uart_integration_test
+    UartAsyncIntegrationTest.cpp
+    # SysTick_Handler + USART1_IRQHandler
+    ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/src/stm32f1xx_it.cpp
+    # UART GPIO / clock initialization
+    ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/src/stm32f1xx_hal_msp.cpp
+    ${STM32F103_STARTUP_FILE}
+    ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
+)
+
+set_target_properties(
+    stm32f103_async_uart_integration_test
+    PROPERTIES OUTPUT_NAME "stm32f103_async_uart_integration_test" SUFFIX ".elf"
+)
+
+target_include_directories(
+    stm32f103_async_uart_integration_test
+    PRIVATE ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/include
+            ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/include
+)
+
+target_link_libraries(
+    stm32f103_async_uart_integration_test PRIVATE platform_common platform_hal platform_stm32f103
+                                                  bsp_stm32f103_board
+)
+
+target_compile_features(stm32f103_async_uart_integration_test PRIVATE cxx_std_17)
+
+stm32f103_configure_executable(stm32f103_async_uart_integration_test)
+
+stm32f103_add_firmware_artifacts(stm32f103_async_uart_integration_test)

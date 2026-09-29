@@ -2,7 +2,10 @@
 # STM32F103 board support package
 # ============================================================================
 
-add_library(bsp_stm32f103_board STATIC src/Board.cpp src/stm32f1xx_it.cpp src/stm32f1xx_hal_msp.cpp)
+add_library(
+    bsp_stm32f103_board STATIC src/Board.cpp src/stm32f1xx_it.cpp src/stm32f1xx_hal_msp.cpp
+                               include/platform/bsp/stm32f103_board/Board.hpp
+)
 
 target_include_directories(bsp_stm32f103_board PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
