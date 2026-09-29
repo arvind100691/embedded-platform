@@ -11,6 +11,8 @@ add_library(
     ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_rcc_ex.c
     ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_flash.c
     ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_flash_ex.c
+    ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_dma.c
+    ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_uart.c
     ${STM32F1_SYSTEM_FILE}
 )
 
@@ -27,7 +29,7 @@ stm32f103_configure_target(stm32f1xx_hal)
 # Project-owned STM32F103 platform implementation
 # ============================================================================
 
-add_library(platform_stm32f103 STATIC src/Stm32Gpio.cpp)
+add_library(platform_stm32f103 STATIC src/Stm32Gpio.cpp src/Stm32Uart.cpp)
 
 target_include_directories(platform_stm32f103 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 

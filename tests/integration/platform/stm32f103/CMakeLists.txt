@@ -68,3 +68,44 @@ target_link_options(stm32f103_gpio_integration_test PRIVATE -Wl,-u,EXTI0_IRQHand
 # ============================================================================
 
 stm32f103_add_firmware_artifacts(stm32f103_gpio_integration_test)
+
+# ============================================================================
+# STM32F103 UART integration-test firmware
+#
+# Hardware loopback required:
+#     PA9 (USART1 TX) <-> PA10 (USART1 RX)
+# ============================================================================
+
+add_executable(
+    stm32f103_uart_integration_test
+    UartIntegrationTest.cpp
+    # The BSP MSP implementation contains the strong HAL UART MSP hook.
+    # Include it directly here for the same static-library/weak-symbol reason
+    # encountered previously with the GPIO EXTI handler.
+    ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/src/stm32f1xx_it.cpp
+    ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/src/stm32f1xx_hal_msp.cpp
+    ${STM32F103_STARTUP_FILE}
+    ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
+)
+
+set_target_properties(
+    stm32f103_uart_integration_test PROPERTIES OUTPUT_NAME "stm32f103_uart_integration_test" SUFFIX
+                                                                                             ".elf"
+)
+
+target_include_directories(
+    stm32f103_uart_integration_test
+    PRIVATE ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/include
+            ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/include
+)
+
+target_link_libraries(
+    stm32f103_uart_integration_test PRIVATE platform_common platform_hal platform_stm32f103
+                                            bsp_stm32f103_board
+)
+
+target_compile_features(stm32f103_uart_integration_test PRIVATE cxx_std_17)
+
+stm32f103_configure_executable(stm32f103_uart_integration_test)
+
+stm32f103_add_firmware_artifacts(stm32f103_uart_integration_test)

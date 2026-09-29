@@ -21,6 +21,29 @@
             ],
             "runToEntryPoint": "main",
             "showDevDebugOutput": "raw"
+        },
+        {
+            "name": "Debug STM32F103 UART Integration Test",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/stm32f103-gpio-test/tests/integration/platform/stm32f103/stm32f103_uart_integration_test.elf",
+            "servertype": "external",
+            "gdbTarget": "localhost:50000",
+            "gdbPath": "/usr/bin/gdb-multiarch",
+            "objdumpPath": "/usr/bin/arm-none-eabi-objdump",
+            "overrideLaunchCommands": [
+                "monitor reset halt",
+                "load",
+                "monitor reset halt"
+            ],
+            "overrideRestartCommands": [
+                "monitor reset halt",
+                "load",
+                "monitor reset halt"
+            ],
+            "runToEntryPoint": "main",
+            "showDevDebugOutput": "raw"
         }
     ]
 }
