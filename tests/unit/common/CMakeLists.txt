@@ -1,4 +1,7 @@
-add_executable(platform_common_unit_tests TypesTest.cpp ErrorCodeTest.cpp ResultTest.cpp)
+add_executable(
+    platform_common_unit_tests TypesTest.cpp ErrorCodeTest.cpp ResultTest.cpp
+                               ByteRingBufferTest.cpp
+)
 
 target_link_libraries(
     platform_common_unit_tests PRIVATE platform_common GTest::gtest_main GTest::gmock
