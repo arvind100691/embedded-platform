@@ -29,11 +29,11 @@ stm32f103_configure_target(stm32f1xx_hal)
 # Project-owned STM32F103 platform implementation
 # ============================================================================
 
-add_library(platform_stm32f103 STATIC src/Stm32Gpio.cpp src/Stm32Uart.cpp)
+add_library(platform_stm32f103 STATIC src/Stm32Gpio.cpp src/Stm32Uart.cpp src/HardFaultHandler.cpp)
 
 target_include_directories(platform_stm32f103 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(platform_stm32f103 PUBLIC platform_hal stm32f1xx_hal)
+target_link_libraries(platform_stm32f103 PUBLIC platform_common platform_hal stm32f1xx_hal)
 
 target_compile_features(platform_stm32f103 PUBLIC cxx_std_17)
 
