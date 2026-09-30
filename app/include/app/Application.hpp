@@ -12,6 +12,8 @@ public:
 
     bool initialize();
 
+    int run();
+
 private:
     platform::hal::IGpio& statusLed_;
 };
