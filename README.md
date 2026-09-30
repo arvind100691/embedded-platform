@@ -124,15 +124,15 @@ embedded-platform/
 |   +-- flash/                   # Flash/programming utilities
 |   +-- debug/                   # Debug/OpenOCD/GDB configuration
 |   +-- scripts/                 # Developer automation
-|   +-- host/                    # Linux-native utilities
-|
-+-- config/                      # Build/platform/board/application configuration
 |
 +-- docs/
     +-- architecture/
-    +-- development/
-    +-- testing/
     +-- coding_standard.md
+
+Notes:
+- The current checked-in repository does not include a top-level config/ directory.
+- Historical documentation may mention planned host-side utilities or config folders; those remain future work rather than active source structure.
+- The runtime architecture is still organized around platform/, app/, tests/, external/, and tools/ as the active tree.
 ```
 
 ## Build Environment

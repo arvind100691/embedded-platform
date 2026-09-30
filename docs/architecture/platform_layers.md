@@ -74,8 +74,9 @@ The `tests/`, `tools/`, and `external/` areas are supporting domains and are not
 | `tests/` | Unit/integration tests and test doubles |
 | `external/` | Third-party dependencies |
 | `tools/` | Host-side build/flash/debug/scripts/utilities |
-| `config/` | Build/platform/board/application configuration |
 | `docs/` | Architecture, coding, development, and testing documentation |
+
+> Current repository note: the checked-in tree does not include a top-level config/ directory, and the repo currently uses the active source layout above as the canonical structure. Any legacy references to config/ or additional host utility folders should be treated as planned work rather than current implementation.
 
 ## 5. Common Layer
 
@@ -216,7 +217,37 @@ platform/os/
 
 FreeRTOS-specific types such as `TaskHandle_t` and `SemaphoreHandle_t` must remain inside the FreeRTOS implementation.
 
-## 8. Middleware
+## 8. Implementation Notes for Current Structure
+
+The current codebase is already demonstrating the intended layering, but a few boundaries still need cleanup so the architecture remains explicit as the project grows.
+
+### 8.1 Board configuration vs MCU port ownership
+
+The BSP currently owns board-specific pin routing and clock setup while the STM32 port owns more generic MCU implementation details. This is the correct direction, but the boundary should remain explicit:
+
+```text
+MCU port: HAL adaptation, driver logic, vendor integration
+BSP: board-specific clocks, pin mapping, routing, IRQ context
+user/application config: product policy and hardware selection
+```
+
+The project should avoid letting board facts leak into portable platform interfaces or application code.
+
+### 8.2 Vector/interrupt ownership
+
+The current integration-test strategy includes IRQ source files directly and relies on linker retention for specific handlers. This is workable for the current milestone, but it is not a final ownership model.
+
+The architectural goal should be:
+
+```text
+one well-defined place for MCU interrupt vectors
+clear ownership of each IRQ handler
+linker retention handled by the vector layer, not by each individual test target
+```
+
+This keeps interrupt ownership aligned with the lower-level BSP/port boundary instead of distributing workarounds throughout the test tree.
+
+## 9. Middleware
 
 Middleware provides reusable runtime services above the primitive hardware/OS abstractions.
 
