@@ -8,9 +8,6 @@
 #include "stm32f1xx.h"
 #include "stm32f1xx_hal.h"
 
-namespace
-{
-
 enum class TestStatus : std::uint32_t
 {
     NotStarted = 0x0000,
@@ -42,14 +39,17 @@ struct TransferState
     volatile std::size_t transferredBytes{0U};
 };
 
-volatile TestStatus g_uart_async_test_status = TestStatus::NotStarted;
-volatile std::uint32_t g_uart_async_tx_callback_count = 0U;
-volatile std::uint32_t g_uart_async_rx_callback_count = 0U;
-volatile std::uint32_t g_uart_async_tx_transferred = 0U;
-volatile std::uint32_t g_uart_async_rx_transferred = 0U;
+extern "C"
+{
+    volatile TestStatus g_uart_async_test_status = TestStatus::NotStarted;
+    volatile std::uint32_t g_uart_async_tx_callback_count = 0U;
+    volatile std::uint32_t g_uart_async_rx_callback_count = 0U;
+    volatile std::uint32_t g_uart_async_tx_transferred = 0U;
+    volatile std::uint32_t g_uart_async_rx_transferred = 0U;
+}
 
-void txCallback(platform::hal::UartTransferStatus status, std::size_t transferredBytes,
-                void* context)
+static void txCallback(platform::hal::UartTransferStatus status, std::size_t transferredBytes,
+                       void* context)
 {
     auto* state = static_cast<TransferState*>(context);
     state->status = status;
@@ -60,8 +60,8 @@ void txCallback(platform::hal::UartTransferStatus status, std::size_t transferre
     g_uart_async_tx_transferred = static_cast<std::uint32_t>(transferredBytes);
 }
 
-void rxCallback(platform::hal::UartTransferStatus status, std::size_t transferredBytes,
-                void* context)
+static void rxCallback(platform::hal::UartTransferStatus status, std::size_t transferredBytes,
+                       void* context)
 {
     auto* state = static_cast<TransferState*>(context);
     state->status = status;
@@ -72,7 +72,7 @@ void rxCallback(platform::hal::UartTransferStatus status, std::size_t transferre
     g_uart_async_rx_transferred = static_cast<std::uint32_t>(transferredBytes);
 }
 
-[[noreturn]] void testFailure(TestStatus status)
+[[noreturn]] static void testFailure(TestStatus status)
 {
     g_uart_async_test_status = status;
     __disable_irq();
@@ -83,7 +83,7 @@ void rxCallback(platform::hal::UartTransferStatus status, std::size_t transferre
     }
 }
 
-bool waitForCompletion(const TransferState& state, std::uint32_t timeoutMs)
+static bool waitForCompletion(const TransferState& state, std::uint32_t timeoutMs)
 {
     const std::uint32_t start = HAL_GetTick();
 
@@ -97,8 +97,6 @@ bool waitForCompletion(const TransferState& state, std::uint32_t timeoutMs)
 
     return true;
 }
-
-} // namespace
 
 int main()
 {

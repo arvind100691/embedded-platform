@@ -289,26 +289,18 @@ void Stm32Uart::handleRxComplete()
 
 void Stm32Uart::handleError()
 {
-    const bool txWasActive = txActive_;
-    const bool rxWasActive = rxActive_;
-
-    const auto txCallback = txCallback_;
-    void* const txContext = txContext_;
-    const std::size_t txTransferred = transferredBytes(txRequestedSize_, handle_.TxXferCount);
+    if (!rxActive_)
+    {
+        return;
+    }
 
     const auto rxCallback = rxCallback_;
     void* const rxContext = rxContext_;
     const std::size_t rxTransferred = transferredBytes(rxRequestedSize_, handle_.RxXferCount);
 
-    clearTransmitCallbackState();
     clearReceiveCallbackState();
 
-    if (txWasActive && txCallback != nullptr)
-    {
-        txCallback(platform::hal::UartTransferStatus::Error, txTransferred, txContext);
-    }
-
-    if (rxWasActive && rxCallback != nullptr)
+    if (rxCallback != nullptr)
     {
         rxCallback(platform::hal::UartTransferStatus::Error, rxTransferred, rxContext);
     }

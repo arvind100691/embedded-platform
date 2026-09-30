@@ -131,6 +131,18 @@ public:
         callback(status, transferredBytes, context);
     }
 
+    bool completeReceiveByte(std::uint8_t value)
+    {
+        if (!receiveActive_ || receiveBuffer_ == nullptr || receiveSize_ == 0U)
+        {
+            return false;
+        }
+
+        receiveBuffer_[0] = value;
+        completeReceive(platform::hal::UartTransferStatus::Completed, 1U);
+        return true;
+    }
+
     void setTransmitStartFailure(platform::ErrorCode error)
     {
         transmitShouldStart_ = false;

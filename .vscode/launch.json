@@ -50,7 +50,7 @@
             "type": "cortex-debug",
             "request": "launch",
             "cwd": "${workspaceFolder}",
-            "executable": "${workspaceFolder}/build/stm32f103-gpio-test/tests/integration/platform/stm32f103/stm32f103_async_uart_integration_test.elf",
+            "executable": "${workspaceFolder}/build/stm32f103-gpio-test/tests/integration/platform/stm32f103/stm32f103_buffered_async_uart_integration_test.elf",
             "servertype": "external",
             "gdbTarget": "localhost:50000",
             "gdbPath": "/usr/bin/gdb-multiarch",

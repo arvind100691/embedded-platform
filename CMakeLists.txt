@@ -44,6 +44,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/modules")
 add_subdirectory(platform/common)
 add_subdirectory(platform/hal)
 add_subdirectory(platform/os)
+add_subdirectory(platform/middleware/communication)
 
 # ============================================================================
 # STM32F103 platform + BSP
