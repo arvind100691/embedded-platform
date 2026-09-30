@@ -143,10 +143,7 @@ function(stm32f103_configure_executable TARGET)
         add_dependencies(${TARGET} bsp_stm32f103_board_vectors)
 
         target_link_options(
-            ${TARGET}
-            PRIVATE
-            -Wl,--whole-archive
-            "$<TARGET_FILE:bsp_stm32f103_board_vectors>"
+            ${TARGET} PRIVATE -Wl,--whole-archive "$<TARGET_FILE:bsp_stm32f103_board_vectors>"
             -Wl,--no-whole-archive
         )
     endif()

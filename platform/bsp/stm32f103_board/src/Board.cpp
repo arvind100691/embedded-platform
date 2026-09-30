@@ -1,5 +1,6 @@
 #include "platform/bsp/stm32f103_board/Board.hpp"
 
+#include "platform/bsp/stm32f103_board/BoardConfig.hpp"
 #include "platform/stm32f103/Stm32Gpio.hpp"
 #include "platform/stm32f103/Stm32Uart.hpp"
 
@@ -8,8 +9,11 @@
 namespace
 {
 
-platform::stm32f103::Stm32Gpio g_statusLed(GPIOC, GPIO_PIN_13);
-platform::stm32f103::Stm32Uart g_consoleUart(USART1);
+platform::stm32f103::Stm32Gpio
+    g_statusLed(platform::bsp::stm32f103_board::BoardConfig::statusLedPort(),
+                platform::bsp::stm32f103_board::BoardConfig::statusLedPin());
+platform::stm32f103::Stm32Uart
+    g_consoleUart(platform::bsp::stm32f103_board::BoardConfig::consoleUartInstance());
 
 void SystemClock_Config()
 {
@@ -23,6 +27,9 @@ void SystemClock_Config()
     oscConfig.PLL.PLLState = RCC_PLL_ON;
     oscConfig.PLL.PLLSource = RCC_PLLSOURCE_HSE;
     oscConfig.PLL.PLLMUL = RCC_PLL_MUL9;
+
+    static_cast<void>(platform::bsp::stm32f103_board::BoardConfig::externalOscillatorHz());
+    static_cast<void>(platform::bsp::stm32f103_board::BoardConfig::systemClockHz());
 
     if (HAL_RCC_OscConfig(&oscConfig) != HAL_OK)
     {

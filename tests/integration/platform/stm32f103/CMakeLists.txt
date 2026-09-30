@@ -66,8 +66,7 @@ stm32f103_add_firmware_artifacts(stm32f103_gpio_integration_test)
 
 add_executable(
     stm32f103_uart_integration_test
-    UartIntegrationTest.cpp
-    ${STM32F103_STARTUP_FILE}
+    UartIntegrationTest.cpp ${STM32F103_STARTUP_FILE}
     ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
 )
 
@@ -102,8 +101,7 @@ stm32f103_add_firmware_artifacts(stm32f103_uart_integration_test)
 
 add_executable(
     stm32f103_async_uart_integration_test
-    UartAsyncIntegrationTest.cpp
-    ${STM32F103_STARTUP_FILE}
+    UartAsyncIntegrationTest.cpp ${STM32F103_STARTUP_FILE}
     ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
 )
 
@@ -138,8 +136,7 @@ stm32f103_add_firmware_artifacts(stm32f103_async_uart_integration_test)
 
 add_executable(
     stm32f103_buffered_async_uart_integration_test
-    BufferedAsyncUartIntegrationTest.cpp
-    ${STM32F103_STARTUP_FILE}
+    BufferedAsyncUartIntegrationTest.cpp ${STM32F103_STARTUP_FILE}
     ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
 )
 
@@ -150,19 +147,14 @@ set_target_properties(
 
 target_include_directories(
     stm32f103_buffered_async_uart_integration_test
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/include
-        ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/include
+    PRIVATE ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/include
+            ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/include
 )
 
 target_link_libraries(
     stm32f103_buffered_async_uart_integration_test
-    PRIVATE
-        platform_common
-        platform_hal
-        platform_stm32f103
-        platform_communication
-        bsp_stm32f103_board
+    PRIVATE platform_common platform_hal platform_stm32f103 platform_communication
+            bsp_stm32f103_board
 )
 
 target_compile_features(stm32f103_buffered_async_uart_integration_test PRIVATE cxx_std_17)
