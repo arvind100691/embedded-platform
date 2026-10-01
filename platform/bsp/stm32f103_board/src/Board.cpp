@@ -6,6 +6,13 @@
 
 #include "stm32f1xx_hal.h"
 
+namespace platform::bsp::stm32f103_board
+{
+
+void ensureHalMspLinked();
+
+} // namespace platform::bsp::stm32f103_board
+
 namespace
 {
 
@@ -61,6 +68,7 @@ namespace platform::bsp::stm32f103_board
 
 void init()
 {
+    ensureHalMspLinked();
     HAL_Init();
 
     SystemClock_Config();

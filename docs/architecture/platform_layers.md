@@ -247,6 +247,27 @@ linker retention handled by the vector layer, not by each individual test target
 
 This keeps interrupt ownership aligned with the lower-level BSP/port boundary instead of distributing workarounds throughout the test tree.
 
+### 8.3 Fault handling boundary
+
+The project now uses a layered fault-handling structure that keeps the exception path cleanly separated by ownership:
+
+```text
+platform/common/Fault.hpp
+    -> portable fault record structure
+
+platform/ports/stm32/stm32f103/HardFaultHandler.hpp
+    -> MCU-specific register capture contract
+
+platform/ports/stm32/stm32f103/src/HardFaultHandler.cpp
+    -> capture stack and SCB fault state
+
+app/src/FaultHandler.cpp
+    -> final HardFault_Handler override
+    -> console UART dump and infinite fault loop
+```
+
+This design keeps the port layer independent from BSP code while still letting the final exception vector be a strong override in the application layer. The CPU still reaches the handler through the standard Cortex-M exception vector table; the strong symbol definition replaces the weak startup handler during linking.
+
 ## 9. Middleware
 
 Middleware provides reusable runtime services above the primitive hardware/OS abstractions.
@@ -278,6 +299,34 @@ DiagnosticProtocol
 ```
 
 The protocol itself remains independent of the STM32 implementation.
+
+### Console and CLI boundary
+
+The CLI-facing console contract is transport-independent. The application uses
+`IConsole`, while `UartConsole` adapts that contract to the HAL's `IUart`:
+
+```text
+Application / CLI
+                |
+                v
+         IConsole
+                ^
+                |
+     UartConsole
+                |
+                v
+             IUart
+                |
+                v
+    MCU UART driver
+```
+
+The composition root selects the board's UART and constructs `UartConsole`.
+`ConsoleCli` polls the console, edits a fixed-capacity input line, echoes input,
+and dispatches completed lines through a fixed-capacity `CommandRegistry`.
+Application command groups live under `app/.../console/commands/` and register
+their handlers with the registry; each group can be maintained independently.
+The current LED command group supports `blink on` and `blink off`.
 
 ## 9. MCU Port
 

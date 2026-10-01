@@ -34,6 +34,9 @@ The project currently has the following foundation implemented:
 - STM32F103 GCC target and linker configuration.
 - First concrete MCU adapter: `Stm32Gpio`.
 - STM32F103 board/BSP layer with clock and board-specific GPIO mapping.
+- Board-level console UART configuration for USART1 and startup diagnostics.
+- Embedded application startup log over the board console UART.
+- Layered hard-fault capture path using a platform fault record, STM32 port register capture, and app-level UART dump override.
 - Firmware ELF/HEX/BIN/MAP generation.
 
 The next development work is focused on verification of the GPIO/application path, followed by additional MCU peripherals and the OS implementation.

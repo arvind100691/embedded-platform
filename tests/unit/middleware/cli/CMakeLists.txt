@@ -1,0 +1,9 @@
+add_executable(platform_cli_unit_tests UartConsoleTest.cpp ConsoleCliTest.cpp)
+
+target_include_directories(platform_cli_unit_tests PRIVATE ${CMAKE_SOURCE_DIR}/tests/mocks)
+
+target_link_libraries(platform_cli_unit_tests PRIVATE platform_cli GTest::gtest_main)
+
+target_compile_features(platform_cli_unit_tests PRIVATE cxx_std_17)
+
+gtest_discover_tests(platform_cli_unit_tests)

@@ -1,34 +1,20 @@
 #include "platform/bsp/stm32f103_board/Board.hpp"
-#include "platform/hal/IUart.hpp"
+#include "platform/middleware/cli/IConsole.hpp"
+#include "platform/middleware/cli/UartConsole.hpp"
 
 #include "app/Application.hpp"
 
 namespace
 {
 
-void printStartupMessage()
+void printStartupMessage(platform::middleware::cli::IConsole& console)
 {
-    platform::hal::IUart& uart = platform::bsp::stm32f103_board::consoleUart();
-
-    platform::hal::UartConfig config{};
-    config.baudRate = 115200U;
-    config.dataBits = 8U;
-    config.parity = platform::hal::UartParity::None;
-    config.stopBits = platform::hal::UartStopBits::One;
-    config.flowControl = platform::hal::UartFlowControl::None;
-
-    if (!uart.configure(config))
-    {
-        return;
-    }
-
     constexpr char kBootMessage[] = "Embedded Platform boot\r\n"
                                     "Target: STM32F103\r\n"
                                     "Board: stm32f103_board\r\n"
                                     "Console UART: USART1 (PA9 TX, PA10 RX)\r\n"
                                     "Status LED: PC13\r\n";
-    (void)uart.transmit(reinterpret_cast<const std::uint8_t*>(kBootMessage),
-                        sizeof(kBootMessage) - 1U, 100U);
+    (void)console.write(std::string_view(kBootMessage, sizeof(kBootMessage) - 1U));
 }
 
 } // namespace
@@ -36,9 +22,15 @@ void printStartupMessage()
 int main()
 {
     platform::bsp::stm32f103_board::init();
-    printStartupMessage();
 
-    app::Application application(platform::bsp::stm32f103_board::statusLed());
+    platform::middleware::cli::UartConsole console(platform::bsp::stm32f103_board::consoleUart());
+    if (!console.initialize())
+    {
+        return 1;
+    }
+    printStartupMessage(console);
+
+    app::Application application(platform::bsp::stm32f103_board::statusLed(), console);
 
     return application.run();
 }

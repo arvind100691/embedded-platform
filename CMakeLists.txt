@@ -45,6 +45,7 @@ add_subdirectory(platform/common)
 add_subdirectory(platform/hal)
 add_subdirectory(platform/os)
 add_subdirectory(platform/middleware/communication)
+add_subdirectory(platform/middleware/cli)
 
 # ============================================================================
 # STM32F103 platform + BSP

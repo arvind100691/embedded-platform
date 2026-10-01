@@ -4,8 +4,10 @@
 
 #include "platform/common/ErrorCode.hpp"
 #include "platform/hal/IGpio.hpp"
+#include "platform/middleware/cli/UartConsole.hpp"
 
 #include "MockGpio.hpp"
+#include "MockUart.hpp"
 
 namespace
 {
@@ -13,8 +15,11 @@ namespace
 TEST(ApplicationTest, InitializeConfiguresStatusLedAsOutput)
 {
     MockGpio gpio;
+    MockUart uart;
+    platform::middleware::cli::UartConsole console(uart);
+    ASSERT_TRUE(console.initialize());
 
-    app::Application application(gpio);
+    app::Application application(gpio, console);
 
     const bool result = application.initialize();
 
@@ -36,10 +41,13 @@ TEST(ApplicationTest, InitializeConfiguresStatusLedAsOutput)
 TEST(ApplicationTest, InitializeFailsWhenGpioConfigurationFails)
 {
     MockGpio gpio;
+    MockUart uart;
+    platform::middleware::cli::UartConsole console(uart);
+    ASSERT_TRUE(console.initialize());
 
     gpio.setConfigureFailure(platform::ErrorCode::HardwareFault);
 
-    app::Application application(gpio);
+    app::Application application(gpio, console);
 
     const bool result = application.initialize();
 
@@ -51,8 +59,11 @@ TEST(ApplicationTest, InitializeFailsWhenGpioConfigurationFails)
 TEST(ApplicationTest, InitializeSetsExpectedInitialState)
 {
     MockGpio gpio;
+    MockUart uart;
+    platform::middleware::cli::UartConsole console(uart);
+    ASSERT_TRUE(console.initialize());
 
-    app::Application application(gpio);
+    app::Application application(gpio, console);
 
     ASSERT_TRUE(application.initialize());
 

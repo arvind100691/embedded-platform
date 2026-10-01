@@ -2,6 +2,13 @@
 
 #include "stm32f1xx_hal.h"
 
+namespace platform::bsp::stm32f103_board
+{
+
+void ensureHalMspLinked() {}
+
+} // namespace platform::bsp::stm32f103_board
+
 extern "C" void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
 {
     if (uartHandle == nullptr)
