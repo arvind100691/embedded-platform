@@ -219,6 +219,18 @@ FreeRTOS-specific types such as `TaskHandle_t` and `SemaphoreHandle_t` must rema
 
 ## 8. Implementation Notes for Current Structure
 
+The current implementation status is aligned with the architecture and has moved beyond basic peripheral proof-of-concept:
+
+- GPIO support is implemented and verified through the STM32F103 port and hardware integration path.
+- Synchronous UART is implemented and validated.
+- Asynchronous UART is implemented and validated.
+- Buffered async communication is implemented using a fixed-size SPSC ring-buffer middleware layer.
+- The buffering layer covers queueing, overflow tracking, cancellation semantics, and repeated stream-processing behavior in host tests.
+- The current verified host subset includes the UART and ring-buffer tests, which pass as part of the host CTest suite.
+
+This means the repository’s current focus is no longer the initial UART proof-of-concept but the next peripheral vertical slice that follows the same abstraction pattern.
+
+
 The current codebase is already demonstrating the intended layering, but a few boundaries still need cleanup so the architecture remains explicit as the project grows.
 
 ### 8.1 Board configuration vs MCU port ownership

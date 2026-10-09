@@ -20,11 +20,11 @@ The first target is **STM32F103**. The platform is intentionally structured so t
 
 ## Current Status
 
-The project currently has the following foundation implemented:
+The project currently has the following foundation and verified implementation in place:
 
 - Docker-based development environment.
 - CMake + Ninja build flow.
-- CMake Presets for host and STM32F103 configurations.
+- CMake presets for host and STM32F103 configurations.
 - C++17 / C11 project baseline.
 - `platform/common` foundation with fixed-width types, error codes, `Result<T>`, and `NonCopyable`.
 - Hardware abstraction interfaces under `platform/hal`.
@@ -32,14 +32,17 @@ The project currently has the following foundation implemented:
 - GoogleTest and CTest infrastructure.
 - STM32CubeF1 kept as an external dependency.
 - STM32F103 GCC target and linker configuration.
-- First concrete MCU adapter: `Stm32Gpio`.
-- STM32F103 board/BSP layer with clock and board-specific GPIO mapping.
+- `Stm32Gpio` implementation for GPIO input/output and interrupt support.
+- `Stm32Uart` synchronous and asynchronous UART implementation.
+- `BufferedAsyncUart` middleware layer using fixed-capacity SPSC ring buffering.
+- Buffering and async UART host tests covering startup, retry behavior, overflow, cancellation, and sustained stream semantics.
+- STM32F103 board/BSP layer with clock and board-specific GPIO/UART mapping.
 - Board-level console UART configuration for USART1 and startup diagnostics.
 - Embedded application startup log over the board console UART.
 - Layered hard-fault capture path using a platform fault record, STM32 port register capture, and app-level UART dump override.
 - Firmware ELF/HEX/BIN/MAP generation.
 
-The next development work is focused on verification of the GPIO/application path, followed by additional MCU peripherals and the OS implementation.
+The current verified status is that the UART communication layer is functionally complete at the platform level: synchronous UART, asynchronous UART, buffering, overflow handling, cancellation, and repeated stream-processing semantics are covered by host tests. The next phase is the next peripheral vertical slice, typically SPI or I2C, while keeping the same HAL + port + BSP + test pattern used for GPIO and UART.
 
 ## Architecture
 

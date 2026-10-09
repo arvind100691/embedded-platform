@@ -58,3 +58,44 @@ extern "C" void HAL_UART_MspDeInit(UART_HandleTypeDef* uartHandle)
                             platform::bsp::stm32f103_board::BoardConfig::consoleRxPin());
     }
 }
+
+extern "C" void HAL_SPI_MspInit(SPI_HandleTypeDef* spiHandle)
+{
+    if (spiHandle == nullptr ||
+        spiHandle->Instance != platform::bsp::stm32f103_board::BoardConfig::spi1Instance())
+    {
+        return;
+    }
+
+    __HAL_RCC_SPI1_CLK_ENABLE();
+    __HAL_RCC_GPIOA_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpioInit{};
+    gpioInit.Pin = platform::bsp::stm32f103_board::BoardConfig::spi1ClockPin() |
+                   platform::bsp::stm32f103_board::BoardConfig::spi1MosiPin();
+    gpioInit.Mode = GPIO_MODE_AF_PP;
+    gpioInit.Pull = GPIO_NOPULL;
+    gpioInit.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(platform::bsp::stm32f103_board::BoardConfig::spi1ClockPort(), &gpioInit);
+
+    gpioInit.Pin = platform::bsp::stm32f103_board::BoardConfig::spi1MisoPin();
+    gpioInit.Mode = GPIO_MODE_INPUT;
+    gpioInit.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(platform::bsp::stm32f103_board::BoardConfig::spi1MisoPort(), &gpioInit);
+}
+
+extern "C" void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
+{
+    if (spiHandle == nullptr ||
+        spiHandle->Instance != platform::bsp::stm32f103_board::BoardConfig::spi1Instance())
+    {
+        return;
+    }
+
+    __HAL_RCC_SPI1_CLK_DISABLE();
+    HAL_GPIO_DeInit(platform::bsp::stm32f103_board::BoardConfig::spi1ClockPort(),
+                    platform::bsp::stm32f103_board::BoardConfig::spi1ClockPin() |
+                        platform::bsp::stm32f103_board::BoardConfig::spi1MosiPin());
+    HAL_GPIO_DeInit(platform::bsp::stm32f103_board::BoardConfig::spi1MisoPort(),
+                    platform::bsp::stm32f103_board::BoardConfig::spi1MisoPin());
+}

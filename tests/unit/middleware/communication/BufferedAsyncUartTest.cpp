@@ -169,6 +169,105 @@ TEST(BufferedAsyncUartTest, TxErrorStopsFurtherTransmission)
     EXPECT_FALSE(bufferedUart.poll());
 }
 
+TEST(BufferedAsyncUartTest, TxErrorRequiresExplicitClearBeforeRestart)
+{
+    MockAsyncUart uart;
+    BufferedUart bufferedUart(uart);
+
+    ASSERT_TRUE(bufferedUart.start());
+    constexpr std::array<platform::Byte, 2U> first{'A', 'B'};
+    ASSERT_TRUE(bufferedUart.write(first.data(), first.size()));
+    uart.completeTransmit(platform::hal::UartTransferStatus::Error, 0U);
+
+    EXPECT_TRUE(bufferedUart.txError());
+    EXPECT_FALSE(bufferedUart.write(first.data(), first.size()));
+
+    bufferedUart.clearErrors();
+    EXPECT_TRUE(bufferedUart.poll());
+
+    constexpr std::array<platform::Byte, 2U> second{'C', 'D'};
+    const auto result = bufferedUart.write(second.data(), second.size());
+    ASSERT_TRUE(result);
+    EXPECT_EQ(*result.value(), second.size());
+}
+
+TEST(BufferedAsyncUartTest, ReceiveErrorRecoveryRearmsTheReceiver)
+{
+    MockAsyncUart uart;
+    BufferedUart bufferedUart(uart);
+
+    ASSERT_TRUE(bufferedUart.start());
+    uart.completeReceive(platform::hal::UartTransferStatus::Error, 0U);
+
+    EXPECT_TRUE(bufferedUart.rxError());
+    EXPECT_FALSE(bufferedUart.poll());
+
+    bufferedUart.clearErrors();
+    EXPECT_TRUE(bufferedUart.poll());
+    EXPECT_TRUE(uart.receiveActive());
+}
+
+TEST(BufferedAsyncUartTest, ReceiveStreamSurvivesMultiplePollCycles)
+{
+    MockAsyncUart uart;
+    BufferedUart bufferedUart(uart);
+
+    ASSERT_TRUE(bufferedUart.start());
+
+    for (std::size_t index = 0U; index < 5U; ++index)
+    {
+        ASSERT_TRUE(uart.completeReceiveByte(static_cast<platform::Byte>('A' + index)));
+        ASSERT_TRUE(bufferedUart.poll());
+    }
+
+    EXPECT_EQ(bufferedUart.available(), 5U);
+
+    std::array<platform::Byte, 5U> received{};
+    const auto result = bufferedUart.read(received.data(), received.size());
+    ASSERT_TRUE(result);
+    ASSERT_NE(result.value(), nullptr);
+    EXPECT_EQ(*result.value(), 5U);
+
+    for (std::size_t index = 0U; index < received.size(); ++index)
+    {
+        EXPECT_EQ(received[index], static_cast<platform::Byte>('A' + index));
+    }
+}
+
+TEST(BufferedAsyncUartTest, TransmitStreamSurvivesConsecutiveBatches)
+{
+    MockAsyncUart uart;
+    BufferedUart bufferedUart(uart);
+
+    ASSERT_TRUE(bufferedUart.start());
+
+    constexpr std::array<platform::Byte, 4U> first{'A', 'B', 'C', 'D'};
+    constexpr std::array<platform::Byte, 3U> second{'E', 'F', 'G'};
+
+    const auto firstWrite = bufferedUart.write(first.data(), first.size());
+    ASSERT_TRUE(firstWrite);
+    ASSERT_NE(firstWrite.value(), nullptr);
+    EXPECT_EQ(*firstWrite.value(), first.size());
+
+    uart.completeTransmit(platform::hal::UartTransferStatus::Completed, 2U);
+    ASSERT_TRUE(bufferedUart.poll());
+    EXPECT_EQ(uart.transmittedData(), std::vector<std::uint8_t>({'A', 'B'}));
+
+    const auto secondWrite = bufferedUart.write(second.data(), second.size());
+    ASSERT_TRUE(secondWrite);
+    ASSERT_NE(secondWrite.value(), nullptr);
+    EXPECT_EQ(*secondWrite.value(), second.size());
+
+    uart.completeTransmit(platform::hal::UartTransferStatus::Completed, 2U);
+    ASSERT_TRUE(bufferedUart.poll());
+    EXPECT_EQ(uart.transmittedData(), std::vector<std::uint8_t>({'A', 'B', 'C', 'D', 'E', 'F'}));
+
+    uart.completeTransmit(platform::hal::UartTransferStatus::Completed, 2U);
+    ASSERT_TRUE(bufferedUart.poll());
+    EXPECT_EQ(uart.transmittedData(),
+              std::vector<std::uint8_t>({'A', 'B', 'C', 'D', 'E', 'F', 'G'}));
+}
+
 TEST(BufferedAsyncUartTest, StopCancelsActiveTransfers)
 {
     MockAsyncUart uart;

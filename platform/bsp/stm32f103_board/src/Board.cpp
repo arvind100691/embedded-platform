@@ -2,6 +2,7 @@
 
 #include "platform/bsp/stm32f103_board/BoardConfig.hpp"
 #include "platform/stm32f103/Stm32Gpio.hpp"
+#include "platform/stm32f103/Stm32Spi.hpp"
 #include "platform/stm32f103/Stm32Uart.hpp"
 
 #include "stm32f1xx_hal.h"
@@ -21,6 +22,10 @@ platform::stm32f103::Stm32Gpio
                 platform::bsp::stm32f103_board::BoardConfig::statusLedPin());
 platform::stm32f103::Stm32Uart
     g_consoleUart(platform::bsp::stm32f103_board::BoardConfig::consoleUartInstance());
+platform::stm32f103::Stm32Spi g_spi1(platform::bsp::stm32f103_board::BoardConfig::spi1Instance());
+platform::stm32f103::Stm32Gpio
+    g_spi1ChipSelect(platform::bsp::stm32f103_board::BoardConfig::spi1ChipSelectPort(),
+                     platform::bsp::stm32f103_board::BoardConfig::spi1ChipSelectPin());
 
 void SystemClock_Config()
 {
@@ -74,8 +79,14 @@ void init()
     SystemClock_Config();
 
     __HAL_RCC_GPIOA_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_AFIO_CLK_ENABLE();
+
+    platform::hal::GpioConfig chipSelectConfig{};
+    chipSelectConfig.direction = platform::hal::GpioDirection::Output;
+    chipSelectConfig.initialState = platform::hal::GpioState::High;
+    static_cast<void>(g_spi1ChipSelect.configure(chipSelectConfig));
 }
 
 platform::hal::IGpio& statusLed()
@@ -91,6 +102,16 @@ platform::hal::IAsyncUart& consoleAsyncUart()
 platform::hal::IUart& consoleUart()
 {
     return g_consoleUart;
+}
+
+platform::hal::ISpi& spi1()
+{
+    return g_spi1;
+}
+
+platform::hal::IGpio& spi1ChipSelect()
+{
+    return g_spi1ChipSelect;
 }
 
 } // namespace platform::bsp::stm32f103_board

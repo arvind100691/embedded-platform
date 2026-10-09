@@ -23,10 +23,10 @@ if(BUILD_STM32F103)
     # ------------------------------------------------------------------------
 
     add_executable(
-        embedded_firmware src/Application.cpp src/FaultHandler.cpp
-                          src/console/commands/LedCommands.cpp src/target_main.cpp
-                          ${STM32F103_STARTUP_FILE}
-                          ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
+        embedded_firmware
+        src/Application.cpp src/FaultHandler.cpp src/console/commands/LedCommands.cpp
+        src/target_main.cpp ${STM32F103_STARTUP_FILE}
+        ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
     )
 
     set_target_properties(

@@ -1,6 +1,6 @@
 add_executable(
-    application_unit_tests ApplicationTest.cpp LedCommandsTest.cpp
-    ${CMAKE_SOURCE_DIR}/app/src/Application.cpp
+    application_unit_tests
+    ApplicationTest.cpp LedCommandsTest.cpp ${CMAKE_SOURCE_DIR}/app/src/Application.cpp
     ${CMAKE_SOURCE_DIR}/app/src/console/commands/LedCommands.cpp
 )
 

@@ -162,3 +162,38 @@ target_compile_features(stm32f103_buffered_async_uart_integration_test PRIVATE c
 stm32f103_configure_executable(stm32f103_buffered_async_uart_integration_test)
 
 stm32f103_add_firmware_artifacts(stm32f103_buffered_async_uart_integration_test)
+
+# ============================================================================
+# STM32F103 SPI integration-test firmware
+#
+# W25Q128 wiring: PA5 SCK, PA6 MISO, PA7 MOSI, PB0 CS.
+# The test reads the JEDEC ID and does not modify flash contents.
+# ============================================================================
+
+add_executable(
+    stm32f103_spi_integration_test
+    SpiIntegrationTest.cpp ${STM32F103_STARTUP_FILE}
+    ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
+)
+
+set_target_properties(
+    stm32f103_spi_integration_test PROPERTIES OUTPUT_NAME "stm32f103_spi_integration_test" SUFFIX
+                                                                                           ".elf"
+)
+
+target_include_directories(
+    stm32f103_spi_integration_test
+    PRIVATE ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/include
+            ${CMAKE_SOURCE_DIR}/platform/bsp/stm32f103_board/include
+)
+
+target_link_libraries(
+    stm32f103_spi_integration_test PRIVATE platform_common platform_hal platform_stm32f103
+                                           bsp_stm32f103_board
+)
+
+target_compile_features(stm32f103_spi_integration_test PRIVATE cxx_std_17)
+
+stm32f103_configure_executable(stm32f103_spi_integration_test)
+
+stm32f103_add_firmware_artifacts(stm32f103_spi_integration_test)
