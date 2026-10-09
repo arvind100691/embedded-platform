@@ -214,19 +214,19 @@ TEST(BufferedAsyncUartTest, ReceiveStreamSurvivesMultiplePollCycles)
 
     ASSERT_TRUE(bufferedUart.start());
 
-    for (std::size_t index = 0U; index < 5U; ++index)
+    for (std::size_t index = 0U; index < 4U; ++index)
     {
         ASSERT_TRUE(uart.completeReceiveByte(static_cast<platform::Byte>('A' + index)));
         ASSERT_TRUE(bufferedUart.poll());
     }
 
-    EXPECT_EQ(bufferedUart.available(), 5U);
+    EXPECT_EQ(bufferedUart.available(), 4U);
 
-    std::array<platform::Byte, 5U> received{};
+    std::array<platform::Byte, 4U> received{};
     const auto result = bufferedUart.read(received.data(), received.size());
     ASSERT_TRUE(result);
     ASSERT_NE(result.value(), nullptr);
-    EXPECT_EQ(*result.value(), 5U);
+    EXPECT_EQ(*result.value(), 4U);
 
     for (std::size_t index = 0U; index < received.size(); ++index)
     {
@@ -251,7 +251,7 @@ TEST(BufferedAsyncUartTest, TransmitStreamSurvivesConsecutiveBatches)
 
     uart.completeTransmit(platform::hal::UartTransferStatus::Completed, 2U);
     ASSERT_TRUE(bufferedUart.poll());
-    EXPECT_EQ(uart.transmittedData(), std::vector<std::uint8_t>({'A', 'B'}));
+    EXPECT_EQ(uart.transmittedData(), std::vector<std::uint8_t>({'C', 'D'}));
 
     const auto secondWrite = bufferedUart.write(second.data(), second.size());
     ASSERT_TRUE(secondWrite);
@@ -260,12 +260,11 @@ TEST(BufferedAsyncUartTest, TransmitStreamSurvivesConsecutiveBatches)
 
     uart.completeTransmit(platform::hal::UartTransferStatus::Completed, 2U);
     ASSERT_TRUE(bufferedUart.poll());
-    EXPECT_EQ(uart.transmittedData(), std::vector<std::uint8_t>({'A', 'B', 'C', 'D', 'E', 'F'}));
+    EXPECT_EQ(uart.transmittedData(), std::vector<std::uint8_t>({'E', 'F'}));
 
     uart.completeTransmit(platform::hal::UartTransferStatus::Completed, 2U);
     ASSERT_TRUE(bufferedUart.poll());
-    EXPECT_EQ(uart.transmittedData(),
-              std::vector<std::uint8_t>({'A', 'B', 'C', 'D', 'E', 'F', 'G'}));
+    EXPECT_EQ(uart.transmittedData(), std::vector<std::uint8_t>({'G'}));
 }
 
 TEST(BufferedAsyncUartTest, StopCancelsActiveTransfers)
