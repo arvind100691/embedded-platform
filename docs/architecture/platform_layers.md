@@ -525,6 +525,8 @@ The project supports separate host and target configurations.
 
 All STM32-compiled libraries must receive the Cortex-M3/Thumb target options, not only the final firmware executable. Load the STM32 CMake module before creating MCU-specific targets and apply `stm32f103_configure_target()` to each compiled library.
 
+The HardFault handler prints the faulting PC and LR, then scans the bounded SRAM stack for additional Thumb return addresses that appear to follow a call instruction. This best-effort trace is capped at 16 entries; other stack data can still resemble call return addresses.
+
 `tools/cmake/toolchains/` contains cross-compilation toolchain files.
 
 ## 15. Vendor Dependency Boundary
