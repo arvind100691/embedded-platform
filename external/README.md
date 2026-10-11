@@ -5,6 +5,7 @@ Third-party libraries used by the embedded platform are kept in this directory.
 Examples:
 
 - GoogleTest
+- stm32cube-f1
 - FreeRTOS
 - Other approved third-party libraries
 

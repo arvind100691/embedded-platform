@@ -6,6 +6,10 @@
     "clang-format.executable": "clang-format",
     "cmake.configureOnOpen": true,
     "cmake.useCMakePresets": "always",
+    "explorer.excludeGitIgnore": false,
+    "files.exclude": {
+        "**/build": false
+    },
     "C_Cpp.intelliSenseEngine": "default",
     "C_Cpp.autocomplete": "default",
     "C_Cpp.errorSquiggles": "enabled",
