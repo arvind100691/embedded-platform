@@ -5,3 +5,9 @@ target_include_directories(platform_storage PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/i
 target_link_libraries(platform_storage PUBLIC platform_hal)
 
 target_compile_features(platform_storage PUBLIC cxx_std_17)
+
+if(BUILD_STM32F103 OR BUILD_STM32F103_INTEGRATION_TESTS)
+
+    stm32f103_configure_target(platform_storage)
+
+endif()

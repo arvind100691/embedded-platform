@@ -24,8 +24,12 @@ if(BUILD_STM32F103)
 
     add_executable(
         embedded_firmware
-        src/Application.cpp src/FaultHandler.cpp src/console/commands/LedCommands.cpp
-        src/target_main.cpp ${STM32F103_STARTUP_FILE}
+        src/Application.cpp
+        src/FaultHandler.cpp
+        src/console/commands/FlashCommands.cpp
+        src/console/commands/LedCommands.cpp
+        src/target_main.cpp
+        ${STM32F103_STARTUP_FILE}
         ${CMAKE_SOURCE_DIR}/platform/ports/stm32/stm32f103/src/syscalls.c
     )
 
@@ -44,8 +48,14 @@ if(BUILD_STM32F103)
     # ------------------------------------------------------------------------
 
     target_link_libraries(
-        embedded_firmware PRIVATE platform_common platform_hal platform_os platform_stm32f103
-                                  platform_cli bsp_stm32f103_board
+        embedded_firmware
+        PRIVATE platform_common
+                platform_hal
+                platform_os
+                platform_stm32f103
+                platform_storage
+                platform_cli
+                bsp_stm32f103_board
     )
 
     target_compile_features(embedded_firmware PRIVATE cxx_std_17)

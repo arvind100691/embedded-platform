@@ -26,7 +26,7 @@ The project currently has the following foundation and verified implementation i
 - CMake + Ninja build flow.
 - CMake presets for host and STM32F103 configurations.
 - C++17 / C11 project baseline.
-- `platform/common` foundation with fixed-width types, error codes, `Result<T>`, and `NonCopyable`.
+- `platform/common` foundation with fixed-width types, error codes, `Result<T>`, `NonCopyable`, and an allocation-free `ArgumentParser`.
 - Hardware abstraction interfaces under `platform/hal`.
 - OS abstraction interfaces under `platform/os`.
 - GoogleTest and CTest infrastructure.
@@ -34,6 +34,9 @@ The project currently has the following foundation and verified implementation i
 - STM32F103 GCC target and linker configuration.
 - `Stm32Gpio` implementation for GPIO input/output and interrupt support.
 - `Stm32Uart` synchronous and asynchronous UART implementation.
+- `Stm32Spi` blocking SPI1/SPI2 implementation for 8-bit frames.
+- `W25Q128` external NOR driver implementing `IFlashStorage`.
+- Application CLI commands for W25Q128 info, read, write, and single-sector erase.
 - `BufferedAsyncUart` middleware layer using fixed-capacity SPSC ring buffering.
 - Buffering and async UART host tests covering startup, retry behavior, overflow, cancellation, and sustained stream semantics.
 - STM32F103 board/BSP layer with clock and board-specific GPIO/UART mapping.
@@ -41,8 +44,9 @@ The project currently has the following foundation and verified implementation i
 - Embedded application startup log over the board console UART.
 - Layered hard-fault capture path using a platform fault record, STM32 port register capture, and app-level UART dump override.
 - Firmware ELF/HEX/BIN/MAP generation.
+- Hardware-verified W25Q128 JEDEC identification and erase/program/readback through the application CLI.
 
-The current verified status is that the UART communication layer is functionally complete at the platform level: synchronous UART, asynchronous UART, buffering, overflow handling, cancellation, and repeated stream-processing semantics are covered by host tests. The next phase is the next peripheral vertical slice, typically SPI or I2C, while keeping the same HAL + port + BSP + test pattern used for GPIO and UART.
+The GPIO, UART, and SPI communication paths are implemented. The W25Q128 driver and CLI are host-tested, and hardware readback has been verified. The next peripheral vertical slice can follow the same HAL + port + BSP + test pattern, with I2C a natural candidate.
 
 ## Architecture
 
@@ -192,6 +196,8 @@ embedded_firmware.map
 
 The `.elf` is the debugger/symbol-rich build artifact. HEX and BIN are generated target images. The MAP file is used for link/memory inspection.
 
+Every source library in an STM32 firmware must receive the Cortex-M3/Thumb target options, not only the final executable. The STM32 CMake module must be loaded before configuring MCU-specific libraries.
+
 ## Testing
 
 Testing is part of the architecture rather than an afterthought.
@@ -210,7 +216,7 @@ Verify interaction between multiple platform layers, middleware components, or s
 
 ### Hardware integration / HIL
 
-Planned for later stages when real STM32 hardware and host-side automation are introduced.
+The repository includes STM32F103 firmware tests for GPIO, UART, and SPI. The SPI test reads the W25Q128 JEDEC ID without modifying flash. Application-level flash commands have also been verified on hardware using erase, program, and readback.
 
 GoogleTest is kept under `external/` and CTest is used as the repository-level test runner.
 
@@ -254,6 +260,27 @@ STM32F103
 ```
 
 GPIO currently models input/output direction, pull configuration, initial state, interrupt edge selection, callback registration, and interrupt enable/disable.
+
+## SPI NOR Flash CLI
+
+The current board maps SPI1 to PA5/SCK, PA6/MISO, and PA7/MOSI. W25Q128 chip select is a separate GPIO on PB0. Firmware configures the bus for 1 MHz, Mode 0, MSB-first, 8-bit transfers and checks the JEDEC ID before starting the CLI.
+
+```text
+flash info
+flash read <hex-address> <length 1-16>
+flash erase <aligned-sector-address>
+flash write <hex-address> <hex-bytes>
+```
+
+Example:
+
+```text
+flash erase 0x00001000
+flash write 0x00001020 DEADBEEF
+flash read 0x00001020 4
+```
+
+Erase affects exactly one aligned 4 KiB sector. Write only sends page-program data; it does not erase implicitly. Erase the containing sector first when its existing contents must be replaced, and preserve any neighboring data in that sector.
 
 ## STM32F103 Port and BSP
 

@@ -2,9 +2,11 @@
 
 #include <string_view>
 
+#include "platform/hal/IFlashStorage.hpp"
 #include "platform/hal/IGpio.hpp"
 #include "platform/middleware/cli/IConsole.hpp"
 
+#include "app/console/commands/FlashCommands.hpp"
 #include "app/console/commands/LedCommands.hpp"
 
 namespace app
@@ -13,7 +15,8 @@ namespace app
 class Application
 {
 public:
-    Application(platform::hal::IGpio& statusLed, platform::middleware::cli::IConsole& console);
+    Application(platform::hal::IGpio& statusLed, platform::middleware::cli::IConsole& console,
+                platform::hal::IFlashStorage& flash);
 
     bool initialize();
 
@@ -24,6 +27,7 @@ public:
 private:
     platform::hal::IGpio& statusLed_;
     platform::middleware::cli::IConsole& console_;
+    app::console::commands::FlashCommands flashCommands_;
     app::console::commands::LedCommands ledCommands_;
 };
 

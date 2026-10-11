@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <string_view>
 
+#include "platform/common/ArgumentParser.hpp"
 #include "platform/common/Result.hpp"
 
 namespace platform::middleware::cli
@@ -13,6 +14,7 @@ class CommandRegistry
 {
 public:
     using Handler = void (*)(void* context);
+    using ArgumentHandler = void (*)(void* context, std::string_view arguments);
 
     static constexpr std::size_t kMaxCommands = 8U;
     static constexpr std::size_t kMaxCommandLength = 32U;
@@ -20,7 +22,66 @@ public:
     platform::Result<void> registerCommand(std::string_view name, Handler handler,
                                            void* context) noexcept
     {
-        if (name.empty() || name.size() > kMaxCommandLength || handler == nullptr)
+        return registerCommand(name, handler, nullptr, context);
+    }
+
+    platform::Result<void> registerCommandWithArgs(std::string_view name, ArgumentHandler handler,
+                                                   void* context) noexcept
+    {
+        platform::ArgumentParser parser(name);
+        std::string_view commandToken;
+        if (handler == nullptr || !parser.next(commandToken) || parser.hasRemaining())
+        {
+            return platform::Result<void>::failure(platform::ErrorCode::InvalidArgument);
+        }
+        return registerCommand(name, nullptr, handler, context);
+    }
+
+    platform::Result<void> dispatch(std::string_view name) const noexcept
+    {
+        for (std::size_t index = 0U; index < commandCount_; ++index)
+        {
+            if (commandName(index) == name)
+            {
+                const Command& command = commands_[index];
+                if (command.handler != nullptr)
+                {
+                    command.handler(command.context);
+                }
+                else
+                {
+                    command.argumentHandler(command.context, {});
+                }
+                return platform::Result<void>::success();
+            }
+        }
+
+        for (std::size_t index = 0U; index < commandCount_; ++index)
+        {
+            const Command& command = commands_[index];
+            if (command.argumentHandler == nullptr)
+            {
+                continue;
+            }
+
+            platform::ArgumentParser parser(name);
+            std::string_view commandToken;
+            if (parser.next(commandToken) && commandToken == commandName(index))
+            {
+                command.argumentHandler(command.context, parser.remaining());
+                return platform::Result<void>::success();
+            }
+        }
+
+        return platform::Result<void>::failure(platform::ErrorCode::NotFound);
+    }
+
+private:
+    platform::Result<void> registerCommand(std::string_view name, Handler handler,
+                                           ArgumentHandler argumentHandler, void* context) noexcept
+    {
+        if (name.empty() || name.size() > kMaxCommandLength ||
+            (handler == nullptr && argumentHandler == nullptr))
         {
             return platform::Result<void>::failure(platform::ErrorCode::InvalidArgument);
         }
@@ -45,32 +106,18 @@ public:
         }
         command.nameSize = name.size();
         command.handler = handler;
+        command.argumentHandler = argumentHandler;
         command.context = context;
         ++commandCount_;
 
         return platform::Result<void>::success();
     }
-
-    platform::Result<void> dispatch(std::string_view name) const noexcept
-    {
-        for (std::size_t index = 0U; index < commandCount_; ++index)
-        {
-            if (commandName(index) == name)
-            {
-                commands_[index].handler(commands_[index].context);
-                return platform::Result<void>::success();
-            }
-        }
-
-        return platform::Result<void>::failure(platform::ErrorCode::NotFound);
-    }
-
-private:
     struct Command
     {
         std::array<char, kMaxCommandLength> name{};
         std::size_t nameSize{0U};
         Handler handler{nullptr};
+        ArgumentHandler argumentHandler{nullptr};
         void* context{nullptr};
     };
 

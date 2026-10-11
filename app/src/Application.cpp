@@ -25,9 +25,11 @@ namespace app
 {
 
 Application::Application(platform::hal::IGpio& statusLed,
-                         platform::middleware::cli::IConsole& console)
+                         platform::middleware::cli::IConsole& console,
+                         platform::hal::IFlashStorage& flash)
     : statusLed_(statusLed)
     , console_(console)
+    , flashCommands_(console, flash)
     , ledCommands_(console)
 {
 }
@@ -65,6 +67,12 @@ int Application::run()
 
     platform::middleware::cli::CommandRegistry commands;
     if (!ledCommands_.registerCommands(commands))
+    {
+        while (true)
+        {
+        }
+    }
+    if (!flashCommands_.registerCommands(commands))
     {
         while (true)
         {

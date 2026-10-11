@@ -37,6 +37,12 @@ option(BUILD_STM32F103_INTEGRATION_TESTS "Build STM32F103 hardware integration t
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/modules")
 
+if(BUILD_STM32F103 OR BUILD_STM32F103_INTEGRATION_TESTS)
+
+    include(Stm32F103)
+
+endif()
+
 # ============================================================================
 # Platform layers
 # ============================================================================
@@ -55,8 +61,6 @@ add_subdirectory(platform/middleware/cli)
 # ============================================================================
 
 if(BUILD_STM32F103 OR BUILD_STM32F103_INTEGRATION_TESTS)
-
-    include(Stm32F103)
 
     add_subdirectory(platform/ports/stm32/stm32f103)
     add_subdirectory(platform/bsp/stm32f103_board)

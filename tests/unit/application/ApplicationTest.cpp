@@ -6,6 +6,7 @@
 #include "platform/hal/IGpio.hpp"
 #include "platform/middleware/cli/UartConsole.hpp"
 
+#include "MockFlashStorage.hpp"
 #include "MockGpio.hpp"
 #include "MockUart.hpp"
 
@@ -15,11 +16,12 @@ namespace
 TEST(ApplicationTest, InitializeConfiguresStatusLedAsOutput)
 {
     MockGpio gpio;
+    MockFlashStorage flash;
     MockUart uart;
     platform::middleware::cli::UartConsole console(uart);
     ASSERT_TRUE(console.initialize());
 
-    app::Application application(gpio, console);
+    app::Application application(gpio, console, flash);
 
     const bool result = application.initialize();
 
@@ -41,13 +43,14 @@ TEST(ApplicationTest, InitializeConfiguresStatusLedAsOutput)
 TEST(ApplicationTest, InitializeFailsWhenGpioConfigurationFails)
 {
     MockGpio gpio;
+    MockFlashStorage flash;
     MockUart uart;
     platform::middleware::cli::UartConsole console(uart);
     ASSERT_TRUE(console.initialize());
 
     gpio.setConfigureFailure(platform::ErrorCode::HardwareFault);
 
-    app::Application application(gpio, console);
+    app::Application application(gpio, console, flash);
 
     const bool result = application.initialize();
 
@@ -59,11 +62,12 @@ TEST(ApplicationTest, InitializeFailsWhenGpioConfigurationFails)
 TEST(ApplicationTest, InitializeSetsExpectedInitialState)
 {
     MockGpio gpio;
+    MockFlashStorage flash;
     MockUart uart;
     platform::middleware::cli::UartConsole console(uart);
     ASSERT_TRUE(console.initialize());
 
-    app::Application application(gpio, console);
+    app::Application application(gpio, console, flash);
 
     ASSERT_TRUE(application.initialize());
 

@@ -5,11 +5,14 @@
 namespace platform::stm32f103
 {
 
-platform::common::FaultRegisters captureFaultRegisters()
+platform::common::FaultRegisters captureFaultRegisters(const std::uint32_t* stackFrame)
 {
-    const std::uint32_t* stackFrame = reinterpret_cast<const std::uint32_t*>(__get_MSP());
-
     platform::common::FaultRegisters fault{};
+    if (stackFrame == nullptr)
+    {
+        return fault;
+    }
+
     fault.r0 = stackFrame[0];
     fault.r1 = stackFrame[1];
     fault.r2 = stackFrame[2];

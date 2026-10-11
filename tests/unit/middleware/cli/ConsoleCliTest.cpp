@@ -18,6 +18,11 @@ void recordCommand(void* context)
     ++*static_cast<std::size_t*>(context);
 }
 
+void recordArguments(void* context, std::string_view arguments)
+{
+    *static_cast<std::string_view*>(context) = arguments;
+}
+
 TEST(ConsoleCliTest, EchoesAndDispatchesCarriageReturnLineFeedCommand)
 {
     MockUart uart;
@@ -42,6 +47,28 @@ TEST(ConsoleCliTest, EchoesAndDispatchesCarriageReturnLineFeedCommand)
     const std::vector<std::uint8_t> expected{'>', ' ', 'b', 'l',  'i',  'n', 'k', ' ',
                                              'o', 'f', 'f', '\r', '\n', '>', ' '};
     EXPECT_EQ(uart.transmittedData(), expected);
+}
+
+TEST(ConsoleCliTest, DispatchesArgumentsAfterRegisteredCommand)
+{
+    MockUart uart;
+    platform::middleware::cli::UartConsole console(uart);
+    ASSERT_TRUE(console.initialize());
+
+    std::string_view receivedArguments{};
+    platform::middleware::cli::CommandRegistry commands;
+    ASSERT_TRUE(commands.registerCommandWithArgs("flash", &recordArguments, &receivedArguments));
+    platform::middleware::cli::ConsoleCli cli(console, commands);
+    ASSERT_TRUE(cli.start());
+
+    constexpr std::string_view input{"flash read 0x1000 4\r"};
+    uart.enqueueReceivedData(reinterpret_cast<const std::uint8_t*>(input.data()), input.size());
+    for (std::size_t index = 0U; index < input.size(); ++index)
+    {
+        ASSERT_TRUE(cli.poll());
+    }
+
+    EXPECT_EQ(receivedArguments, "read 0x1000 4");
 }
 
 } // namespace

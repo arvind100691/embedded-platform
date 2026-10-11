@@ -1,3 +1,5 @@
+#include <cstdint>
+
 #include "platform/bsp/stm32f103_board/Board.hpp"
 #include "platform/hal/IUart.hpp"
 #include "platform/stm32f103/HardFaultHandler.hpp"
@@ -68,7 +70,8 @@ void dumpFaultRegisters(platform::hal::IUart& uart,
 
 } // namespace
 
-extern "C" void HardFault_Handler(void)
+extern "C" [[noreturn]] void HardFault_Handler_C(const std::uint32_t* stackFrame,
+                                                 std::uint32_t exceptionReturn)
 {
     __disable_irq();
 
@@ -83,11 +86,24 @@ extern "C" void HardFault_Handler(void)
 
     if (uart.configure(config))
     {
-        dumpFaultRegisters(uart, platform::stm32f103::captureFaultRegisters());
+        writeRegisterLine(uart, "Frame: ",
+                          static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(stackFrame)));
+        writeRegisterLine(uart, "EXC_RETURN: ", exceptionReturn);
+        dumpFaultRegisters(uart, platform::stm32f103::captureFaultRegisters(stackFrame));
     }
 
     while (true)
     {
         __asm volatile("nop");
     }
+}
+
+extern "C" __attribute__((naked)) void HardFault_Handler(void)
+{
+    __asm volatile("tst lr, #4\n"
+                   "ite eq\n"
+                   "mrseq r0, msp\n"
+                   "mrsne r0, psp\n"
+                   "mov r1, lr\n"
+                   "b HardFault_Handler_C\n");
 }

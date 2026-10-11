@@ -98,7 +98,10 @@ platform/common/include/platform/common/
     ErrorCode.hpp
     Result.hpp
     NonCopyable.hpp
+    ArgumentParser.hpp
 ```
+
+`ArgumentParser` provides allocation-free whitespace tokenization and checked unsigned decimal/hex parsing. It remains hardware-independent and is reused by command dispatch and application command handlers.
 
 The layer may later contain reusable facilities such as:
 
@@ -224,11 +227,14 @@ The current implementation status is aligned with the architecture and has moved
 - GPIO support is implemented and verified through the STM32F103 port and hardware integration path.
 - Synchronous UART is implemented and validated.
 - Asynchronous UART is implemented and validated.
+- SPI1/SPI2 blocking transfers are implemented in the STM32F103 port.
+- The W25Q128 driver implements `IFlashStorage` in `platform/middleware/storage` and is verified on hardware.
+- The application CLI provides bounded flash reads/writes and explicit single-sector erase.
 - Buffered async communication is implemented using a fixed-size SPSC ring-buffer middleware layer.
 - The buffering layer covers queueing, overflow tracking, cancellation semantics, and repeated stream-processing behavior in host tests.
-- The current verified host subset includes the UART and ring-buffer tests, which pass as part of the host CTest suite.
+- The host CTest suite covers common parsing, CLI dispatch, application commands, storage behavior, UART, and ring buffering.
 
-This means the repository’s current focus is no longer the initial UART proof-of-concept but the next peripheral vertical slice that follows the same abstraction pattern.
+The next peripheral vertical slice can build on this pattern; I2C is a natural candidate.
 
 
 The current codebase is already demonstrating the intended layering, but a few boundaries still need cleanup so the architecture remains explicit as the project grows.
@@ -247,17 +253,20 @@ The project should avoid letting board facts leak into portable platform interfa
 
 ### 8.2 Vector/interrupt ownership
 
-The current integration-test strategy includes IRQ source files directly and relies on linker retention for specific handlers. This is workable for the current milestone, but it is not a final ownership model.
+The BSP owns vector implementations in the dedicated `bsp_stm32f103_board_vectors` library. The STM32 CMake module links that library as a whole archive so vector symbols remain present in the final firmware and integration images.
 
-The architectural goal should be:
+The ownership model is:
 
 ```text
-one well-defined place for MCU interrupt vectors
-clear ownership of each IRQ handler
-linker retention handled by the vector layer, not by each individual test target
+BSP vector library
+    -> IRQ handler entry points
+STM32 port drivers
+    -> peripheral HAL IRQ dispatch
+Application or middleware
+    -> short callbacks when required
 ```
 
-This keeps interrupt ownership aligned with the lower-level BSP/port boundary instead of distributing workarounds throughout the test tree.
+This keeps interrupt ownership aligned with the lower-level BSP/port boundary rather than distributing handler retention workarounds across test targets.
 
 ### 8.3 Fault handling boundary
 
@@ -284,14 +293,20 @@ This design keeps the port layer independent from BSP code while still letting t
 
 Middleware provides reusable runtime services above the primitive hardware/OS abstractions.
 
-Planned areas include:
+Implemented middleware currently includes:
+
+```text
+storage/W25Q128
+```
+
+Future reusable services can include:
 
 ```text
 communication/
 diagnostics/
 logging/
 protocol/
-storage/
+additional storage services
 software_update/
 ```
 
@@ -338,7 +353,10 @@ The composition root selects the board's UART and constructs `UartConsole`.
 and dispatches completed lines through a fixed-capacity `CommandRegistry`.
 Application command groups live under `app/.../console/commands/` and register
 their handlers with the registry; each group can be maintained independently.
-The current LED command group supports `blink on` and `blink off`.
+The registry supports both fixed commands and argument-bearing command roots.
+The common `ArgumentParser` is used to tokenize and validate arguments. Current
+groups include `blink on`/`blink off` and `flash info`, `flash read`,
+`flash write`, and `flash erase`.
 
 ## 9. MCU Port
 
@@ -357,10 +375,12 @@ The port contains:
 - MCU-specific linker configuration.
 - Other details that are inherently STM32F103-specific.
 
-Current first adapter:
+Current adapters include:
 
 ```text
 Stm32Gpio
+Stm32Uart
+Stm32Spi
 ```
 
 The port may include vendor headers because it is the implementation boundary.
@@ -391,7 +411,7 @@ Current board example:
 platform/bsp/stm32f103_board/
 ```
 
-The board layer currently owns the example system clock configuration and status LED mapping.
+The board layer currently owns the example system clock configuration, status LED mapping, and SPI1 pin routing. SPI1 uses PA5/SCK, PA6/MISO, and PA7/MOSI; the W25Q128 CS is GPIO PB0 and remains under BSP/application control rather than hardware NSS.
 
 ## 11. Composition Root
 
@@ -405,6 +425,11 @@ BSP / Composition Root
         +--> Stm32Gpio
         |
         +--> Stm32Uart
+        |
+        +--> Stm32Spi + GPIO chip select
+        |        |
+        |        v
+        |     W25Q128 / IFlashStorage
         |
         +--> FreeRtosTask
         |
@@ -478,7 +503,7 @@ Test interaction between multiple abstractions and implementations.
 
 ### Hardware integration/HIL
 
-A later layer can connect host test tooling to a physical STM32 target.
+Hardware integration firmware verifies GPIO, UART, and the SPI JEDEC-ID transaction. The application has also been tested against a W25Q128 with erase, program, and readback. Automated host-to-target HIL orchestration remains future work.
 
 ## 14. Build Architecture
 
@@ -497,6 +522,8 @@ The project supports separate host and target configurations.
           Unit/integration      Firmware ELF
               tests           HEX/BIN/MAP
 ```
+
+All STM32-compiled libraries must receive the Cortex-M3/Thumb target options, not only the final firmware executable. Load the STM32 CMake module before creating MCU-specific targets and apply `stm32f103_configure_target()` to each compiled library.
 
 `tools/cmake/toolchains/` contains cross-compilation toolchain files.
 

@@ -1,6 +1,8 @@
 #include "platform/bsp/stm32f103_board/Board.hpp"
+#include "platform/hal/ISpi.hpp"
 #include "platform/middleware/cli/IConsole.hpp"
 #include "platform/middleware/cli/UartConsole.hpp"
+#include "platform/middleware/storage/W25Q128.hpp"
 
 #include "app/Application.hpp"
 
@@ -30,7 +32,27 @@ int main()
     }
     printStartupMessage(console);
 
-    app::Application application(platform::bsp::stm32f103_board::statusLed(), console);
+    platform::hal::SpiConfig spiConfig{};
+    spiConfig.frequencyHz = 1'000'000U;
+    spiConfig.mode = platform::hal::SpiMode::Mode0;
+    spiConfig.bitOrder = platform::hal::SpiBitOrder::MsbFirst;
+    spiConfig.dataBits = 8U;
+    platform::hal::ISpi& spi = platform::bsp::stm32f103_board::spi1();
+    if (!spi.configure(spiConfig))
+    {
+        static_cast<void>(console.write("SPI configuration failed\r\n"));
+        return 1;
+    }
+
+    platform::middleware::storage::W25Q128 flash(spi,
+                                                 platform::bsp::stm32f103_board::spi1ChipSelect());
+    if (!flash.initialize())
+    {
+        static_cast<void>(console.write("W25Q128 initialization failed\r\n"));
+        return 1;
+    }
+
+    app::Application application(platform::bsp::stm32f103_board::statusLed(), console, flash);
 
     return application.run();
 }

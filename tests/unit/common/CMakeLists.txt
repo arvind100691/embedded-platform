@@ -1,6 +1,6 @@
 add_executable(
     platform_common_unit_tests TypesTest.cpp ErrorCodeTest.cpp ResultTest.cpp
-                               ByteRingBufferTest.cpp
+                               ByteRingBufferTest.cpp ArgumentParserTest.cpp
 )
 
 target_link_libraries(
