@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include "platform/common/Fault.hpp"
 
 namespace platform::stm32f103
