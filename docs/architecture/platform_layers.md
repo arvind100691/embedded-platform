@@ -67,6 +67,7 @@ The `tests/`, `tools/`, and `external/` areas are supporting domains and are not
 | `app/` | Product/application behavior |
 | `platform/common/` | Portable runtime foundation and utilities |
 | `platform/hal/` | Hardware abstraction interfaces |
+| `platform/drivers/` | Portable device drivers built on HAL/platform abstractions |
 | `platform/os/` | OS abstractions and implementations |
 | `platform/middleware/` | Reusable runtime middleware/services |
 | `platform/ports/` | MCU/vendor-specific implementations |
@@ -229,12 +230,15 @@ The current implementation status is aligned with the architecture and has moved
 - Asynchronous UART is implemented and validated.
 - SPI1/SPI2 blocking transfers are implemented in the STM32F103 port.
 - The W25Q128 driver implements `IFlashStorage` in `platform/middleware/storage` and is verified on hardware.
+- The portable MAX30102 driver uses `II2c`; the STM32F103 I²C1 adapter and board wiring are implemented, with host tests passing.
 - The application CLI provides bounded flash reads/writes and explicit single-sector erase.
+- The application includes a raw RED/IR stream and sensor controls; initial physical validation is complete with a replacement module, while sustained acquisition validation remains.
 - Buffered async communication is implemented using a fixed-size SPSC ring-buffer middleware layer.
 - The buffering layer covers queueing, overflow tracking, cancellation semantics, and repeated stream-processing behavior in host tests.
 - The host CTest suite covers common parsing, CLI dispatch, application commands, storage behavior, UART, and ring buffering.
 
-The next peripheral vertical slice can build on this pattern; I2C is a natural candidate.
+The MAX30102/I²C vertical slice now builds on this pattern. Other peripheral
+vertical slices can follow it as the platform expands.
 
 
 The current codebase is already demonstrating the intended layering, but a few boundaries still need cleanup so the architecture remains explicit as the project grows.
@@ -381,9 +385,13 @@ Current adapters include:
 Stm32Gpio
 Stm32Uart
 Stm32Spi
+Stm32I2c
 ```
 
 The port may include vendor headers because it is the implementation boundary.
+`Stm32I2c` implements the existing `II2c` contract and performs the STM32 HAL
+address-format conversion. Device drivers pass the documented seven-bit I²C
+address and do not contain STM32-specific address handling.
 
 ## 10. BSP / Board Layer
 
@@ -411,7 +419,11 @@ Current board example:
 platform/bsp/stm32f103_board/
 ```
 
-The board layer currently owns the example system clock configuration, status LED mapping, and SPI1 pin routing. SPI1 uses PA5/SCK, PA6/MISO, and PA7/MOSI; the W25Q128 CS is GPIO PB0 and remains under BSP/application control rather than hardware NSS.
+The board layer currently owns the example system clock configuration, status
+LED mapping, and SPI/I²C pin routing. SPI1 uses PA5/SCK, PA6/MISO, and PA7/MOSI;
+the W25Q128 CS is GPIO PB0 and remains under BSP/application control rather than
+hardware NSS. The MAX30102 board integration uses I²C1 on PB6/SCL and PB7/SDA
+at 100 kHz.
 
 ## 11. Composition Root
 
@@ -430,6 +442,11 @@ BSP / Composition Root
         |        |
         |        v
         |     W25Q128 / IFlashStorage
+        |
+        +--> Stm32I2c
+        |        |
+        |        v
+        |     Max30102 portable driver
         |
         +--> FreeRtosTask
         |
@@ -503,7 +520,14 @@ Test interaction between multiple abstractions and implementations.
 
 ### Hardware integration/HIL
 
-Hardware integration firmware verifies GPIO, UART, and the SPI JEDEC-ID transaction. The application has also been tested against a W25Q128 with erase, program, and readback. Automated host-to-target HIL orchestration remains future work.
+Hardware integration firmware verifies GPIO, UART, and the SPI JEDEC-ID
+transaction. The application has also been tested against a W25Q128 with
+erase, program, and readback. The MAX30102 driver and application path have
+host unit coverage, and the STM32F103 firmware builds; physical MAX30102
+initial verification succeeded with a replacement module after the original
+module produced I²C `Busy` and approximately 500 mV idle levels on SCL/SDA.
+Sustained acquisition checks and automated host-to-target HIL orchestration
+remain future work.
 
 ## 14. Build Architecture
 
@@ -549,7 +573,7 @@ This is selected because the project uses the GNU ARM Embedded toolchain.
 
 ## 16. Current Vertical Slice
 
-The first completed runtime path is:
+The GPIO runtime path is:
 
 ```text
 main()
@@ -571,6 +595,33 @@ STM32F103
 ```
 
 The target currently builds successfully with the STM32F103 GCC preset and produces a firmware ELF plus derived HEX/BIN/MAP artifacts.
+
+The MAX30102 vertical slice extends the same dependency boundary:
+
+```text
+Application raw-sample stream / CLI
+  |
+  v
+Portable Max30102 driver
+  |
+  v
+II2c
+  |
+  v
+Stm32I2c
+  |
+  v
+STM32 HAL / I2C1 (PB6 SCL, PB7 SDA)
+  |
+  v
+MAX30102
+```
+
+The application prints raw samples as `RED=<value> IR=<value>` and supports
+`sensor off` / `sensor on`. The implementation is host-tested and initial raw
+value hardware verification has succeeded with the replacement sensor. See the
+[MAX30102 integration plan](../MAX30102_Integration_Plan_STM32F103.md) for
+bring-up status and remaining electrical checks.
 
 ## 17. Future Extension
 

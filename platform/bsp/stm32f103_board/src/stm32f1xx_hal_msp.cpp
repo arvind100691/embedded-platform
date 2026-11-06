@@ -99,3 +99,37 @@ extern "C" void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
     HAL_GPIO_DeInit(platform::bsp::stm32f103_board::BoardConfig::spi1MisoPort(),
                     platform::bsp::stm32f103_board::BoardConfig::spi1MisoPin());
 }
+
+extern "C" void HAL_I2C_MspInit(I2C_HandleTypeDef* i2cHandle)
+{
+    if (i2cHandle == nullptr ||
+        i2cHandle->Instance != platform::bsp::stm32f103_board::BoardConfig::i2c1Instance())
+    {
+        return;
+    }
+
+    __HAL_RCC_I2C1_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
+
+    GPIO_InitTypeDef gpioInit{};
+    gpioInit.Pin = platform::bsp::stm32f103_board::BoardConfig::i2c1ClockPin() |
+                   platform::bsp::stm32f103_board::BoardConfig::i2c1DataPin();
+    gpioInit.Mode = GPIO_MODE_AF_OD;
+    gpioInit.Pull = GPIO_NOPULL;
+    gpioInit.Speed = GPIO_SPEED_FREQ_HIGH;
+    HAL_GPIO_Init(platform::bsp::stm32f103_board::BoardConfig::i2c1ClockPort(), &gpioInit);
+}
+
+extern "C" void HAL_I2C_MspDeInit(I2C_HandleTypeDef* i2cHandle)
+{
+    if (i2cHandle == nullptr ||
+        i2cHandle->Instance != platform::bsp::stm32f103_board::BoardConfig::i2c1Instance())
+    {
+        return;
+    }
+
+    __HAL_RCC_I2C1_CLK_DISABLE();
+    HAL_GPIO_DeInit(platform::bsp::stm32f103_board::BoardConfig::i2c1ClockPort(),
+                    platform::bsp::stm32f103_board::BoardConfig::i2c1ClockPin() |
+                        platform::bsp::stm32f103_board::BoardConfig::i2c1DataPin());
+}

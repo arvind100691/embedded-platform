@@ -49,6 +49,7 @@ endif()
 
 add_subdirectory(platform/common)
 add_subdirectory(platform/hal)
+add_subdirectory(platform/drivers/max30102)
 add_subdirectory(platform/os)
 add_subdirectory(platform/middleware/communication)
 add_subdirectory(platform/middleware/storage)

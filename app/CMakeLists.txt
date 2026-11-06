@@ -52,6 +52,7 @@ if(BUILD_STM32F103)
         PRIVATE platform_common
                 platform_hal
                 platform_os
+                platform_max30102
                 platform_stm32f103
                 platform_storage
                 platform_cli

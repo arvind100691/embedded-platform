@@ -101,6 +101,7 @@ function(stm32f103_configure_target TARGET)
     target_compile_options(
         ${TARGET}
         PRIVATE ${STM32F103_CPU_FLAGS}
+                -Os
                 ${STM32F103_SECTION_FLAGS}
                 $<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>
                 $<$<COMPILE_LANGUAGE:CXX>:-fno-rtti>

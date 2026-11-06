@@ -1,4 +1,5 @@
 #include "platform/bsp/stm32f103_board/Board.hpp"
+#include "platform/drivers/max30102/Max30102.hpp"
 #include "platform/hal/ISpi.hpp"
 #include "platform/middleware/cli/IConsole.hpp"
 #include "platform/middleware/cli/UartConsole.hpp"
@@ -15,6 +16,8 @@ void printStartupMessage(platform::middleware::cli::IConsole& console)
                                     "Target: STM32F103\r\n"
                                     "Board: stm32f103_board\r\n"
                                     "Console UART: USART1 (PA9 TX, PA10 RX)\r\n"
+                                    "I2C1: SCL PB6, SDA PB7\r\n"
+                                    "MAX30102 raw stream starts at boot; use 'sensor off' to stop\r\n"
                                     "Status LED: PC13\r\n";
     (void)console.write(std::string_view(kBootMessage, sizeof(kBootMessage) - 1U));
 }
@@ -31,6 +34,17 @@ int main()
         return 1;
     }
     printStartupMessage(console);
+
+    platform::hal::I2cConfig i2cConfig{};
+    i2cConfig.frequencyHz = 100'000U;
+    i2cConfig.addressMode = platform::hal::I2cAddressMode::SevenBit;
+    platform::hal::II2c& i2c = platform::bsp::stm32f103_board::i2c1();
+    if (!i2c.configure(i2cConfig))
+    {
+        static_cast<void>(console.write("I2C1 configuration failed\r\n"));
+        return 1;
+    }
+    platform::drivers::max30102::Max30102 max30102(i2c);
 
     platform::hal::SpiConfig spiConfig{};
     spiConfig.frequencyHz = 1'000'000U;
@@ -52,7 +66,8 @@ int main()
         return 1;
     }
 
-    app::Application application(platform::bsp::stm32f103_board::statusLed(), console, flash);
+    app::Application application(platform::bsp::stm32f103_board::statusLed(), console, flash,
+                                 &max30102);
 
     return application.run();
 }

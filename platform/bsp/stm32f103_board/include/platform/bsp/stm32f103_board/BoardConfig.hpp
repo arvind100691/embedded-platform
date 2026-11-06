@@ -87,6 +87,31 @@ struct BoardConfig
         return GPIO_PIN_0;
     }
 
+    static constexpr I2C_TypeDef* i2c1Instance()
+    {
+        return I2C1;
+    }
+
+    static constexpr GPIO_TypeDef* i2c1ClockPort()
+    {
+        return GPIOB;
+    }
+
+    static constexpr uint16_t i2c1ClockPin()
+    {
+        return GPIO_PIN_6;
+    }
+
+    static constexpr GPIO_TypeDef* i2c1DataPort()
+    {
+        return GPIOB;
+    }
+
+    static constexpr uint16_t i2c1DataPin()
+    {
+        return GPIO_PIN_7;
+    }
+
     static constexpr uint32_t systemClockHz()
     {
         return 72000000U;

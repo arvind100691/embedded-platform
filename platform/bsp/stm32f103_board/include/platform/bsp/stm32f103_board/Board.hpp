@@ -2,6 +2,7 @@
 
 #include "platform/hal/IAsyncUart.hpp"
 #include "platform/hal/IGpio.hpp"
+#include "platform/hal/II2c.hpp"
 #include "platform/hal/ISpi.hpp"
 #include "platform/hal/IUart.hpp"
 
@@ -17,6 +18,8 @@ platform::hal::IAsyncUart& consoleAsyncUart();
 platform::hal::IUart& consoleUart();
 
 platform::hal::ISpi& spi1();
+
+platform::hal::II2c& i2c1();
 
 platform::hal::IGpio& spi1ChipSelect();
 

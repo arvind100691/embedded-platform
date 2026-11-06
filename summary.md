@@ -26,7 +26,7 @@ The project uses C++17/C11, CMake + Ninja, Docker/VS Code Dev Containers, Google
 
 The current embedded runtime also includes a startup UART diagnostic log and a layered hard-fault handler that captures register state and prints it over the console UART in the event of a fault.
 
-The application initializes SPI1 and a W25Q128 external NOR flash, then exposes flash info, read, write, and explicit sector erase commands over the console CLI.
+The application initializes SPI1 and a W25Q128 external NOR flash, then exposes flash info, read, write, and explicit sector erase commands over the console CLI. Firmware also starts MAX30102 acquisition through I²C1 and streams raw RED/IR FIFO samples to the console; hardware acquisition has now been verified with a replacement sensor.
 
 ---
 
@@ -38,6 +38,7 @@ embedded-platform/
 ├── platform/
 │   ├── common/
 │   ├── hal/
+│   ├── drivers/
 │   ├── os/
 │   ├── middleware/
 │   ├── ports/
@@ -800,6 +801,10 @@ Flash CLI read/write/explicit sector erase                  ✅
 W25Q128 hardware JEDEC ID and readback verification         ✅
 STM32 middleware targets configured for Cortex-M3 Thumb    ✅
 Host validation: 74 CTest cases passing                     ✅
+MAX30102 portable driver, FIFO buffering, and host tests     ✅
+STM32F103 I2C1 adapter and PB6/PB7 board wiring             ✅
+MAX30102 raw UART stream and transient I2C retry behavior    ✅
+MAX30102 physical raw-sample verification                   ✅
 ```
 
 ### SPI and W25Q128 Hardware Milestone
@@ -814,35 +819,50 @@ The portable `platform::ArgumentParser` performs allocation-free tokenization an
 
 The first firmware build exposed an important cross-build rule: every compiled STM32 library, not only the final executable, must receive `-mcpu=cortex-m3 -mthumb`. The W25Q128 object initially used ARM-state instructions and faulted at startup; applying the STM32 target configuration corrected the object attributes and reduced linked firmware size from about 58.8 KiB to 47.0 KiB.
 
+### MAX30102 Sensor Integration Milestone
+
+The portable driver in `platform/drivers/max30102/` validates the device ID,
+initializes the sensor cooperatively, reads bounded FIFO batches, decodes
+18-bit RED/IR samples, and tracks hardware FIFO overflow and software queue
+drops. It uses the existing `II2c` abstraction and has 16 passing host unit
+tests, including retry after a transient `Busy` error.
+
+The STM32F103 port implements I²C1 at 100 kHz; the board maps SCL to PB6 and
+SDA to PB7. Firmware streams `RED=<value> IR=<value>` at boot and provides
+`sensor off` and `sensor on` commands. The firmware builds successfully, and
+application unit tests pass.
+
+The initial module returned I²C error `Busy` (code 4); both SCL and SDA measured
+approximately 500 mV while idle, instead of the expected pulled-up high level,
+normally 3.3 V. After replacing the suspected faulty module, raw RED/IR values
+were received on the serial console. Continue checking power, shared ground,
+logic levels, wiring, pull-ups, and sustained acquisition. The integration
+remains uncommitted pending the user's commit request.
+See [the MAX30102 integration plan](docs/MAX30102_Integration_Plan_STM32F103.md).
+
 ---
 
 ## 22. Current Architecture
 
 ```text
-                         Application
-                              │
-                              ▼
-                    Platform abstractions
-                       ┌──────┴──────┐
-                       │             │
-                      GPIO          UART
-                       │         ┌───┴───┐
-                       │         │       │
-                       │      IUart  IAsyncUart
-                       │         │       │
-                       └────┬────┴───┬───┘
-                            │        │
-                            ▼        ▼
-                       STM32 project adapters
-                              │
-                              ▼
-                         STM32 HAL
-                              │
-                              ▼
-                          STM32F103
+Application
+    ↓
+MAX30102 raw stream
+    ↓
+Max30102 portable driver
+    ↓
+II2c
+    ↓
+Stm32I2c (STM32F103 port)
+    ↓
+STM32 HAL / I²C1 (PB6 SCL, PB7 SDA)
+    ↓
+MAX30102 hardware
 ```
 
-Board-specific responsibilities remain below the generic HAL contracts:
+Other board capabilities follow the same direction through GPIO, UART, and
+SPI abstractions and their STM32 port adapters. Board-specific responsibilities
+remain below the generic HAL contracts:
 
 ```text
 BSP
@@ -880,6 +900,7 @@ PC13 status LED
 72 MHz clock
 USART1 routing
 SPI1 routing (PA5/PA6/PA7)
+I2C1 routing (PB6/PB7)
 W25Q128 chip select (PB0)
 ```
 
@@ -970,20 +991,18 @@ error reporting and recovery
 stream processing across repeated poll cycles
 ```
 
-## Phase 2 — Next peripheral vertical slice
+## Phase 2 — I²C and MAX30102 vertical slice
 
-The SPI peripheral and W25Q128 external-flash vertical slice are implemented and hardware-verified. I2C is a natural next peripheral candidate and should follow the established pattern:
+The STM32F103 I²C1 adapter, board wiring, portable MAX30102 driver, application integration, host tests, and initial raw-value hardware validation are complete. Remaining validation should cover:
 
 ```text
-HAL contract
+Verify power, ground, pull-ups, wiring, and idle line levels
     ↓
-host tests / mocks
+Verify I²C ACK and MAX30102 part ID
     ↓
-MCU adapter
+Confirm raw RED/IR values in the console
     ↓
-BSP configuration
-    ↓
-hardware integration test
+Check sustained acquisition and FIFO overflow behavior
 ```
 
 ## Phase 3 — DMA follow-on
@@ -1000,10 +1019,9 @@ Keep DMA-specific details out of generic abstractions unless they represent a re
 
 ## Phase 4 — Additional peripherals
 
-Proceed with:
+Remaining peripheral candidates include:
 
 ```text
-I2C
 Timer
 Watchdog
 ADC
@@ -1131,18 +1149,11 @@ Build/debug configuration remains centralized and reusable.
 
 ## 26. Immediate Next Milestone
 
-The SPI/W25Q128 path is complete through hardware readback. The next technical milestone is an I2C peripheral vertical slice, following the established pattern:
-
-```text
-HAL contract
-    ↓
-host tests / mocks
-    ↓
-MCU adapter
-    ↓
-BSP configuration
-    ↓
-hardware integration test
-```
-
-DMA remains a follow-on optimization for communication peripherals. The W25Q128 busy-poll loop is bounded by a configurable poll count; replacing that count with a time-based timeout and adding an appropriate inter-poll delay remains a storage-driver cleanup item.
+Continue MAX30102 hardware validation with sustained acquisition and FIFO
+overflow observation. The replacement sensor has produced raw RED/IR values in
+the serial console, satisfying the initial hardware bring-up milestone. The
+integration remains uncommitted until the user requests the commit.
+DMA remains a follow-on optimization for communication peripherals. The
+W25Q128 busy-poll loop is bounded by a configurable poll count; replacing that
+count with a time-based timeout and adding an appropriate inter-poll delay
+remains a storage-driver cleanup item.

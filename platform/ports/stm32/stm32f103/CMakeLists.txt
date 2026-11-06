@@ -14,6 +14,7 @@ add_library(
     ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_dma.c
     ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_uart.c
     ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_spi.c
+    ${STM32F1_HAL_DIR}/Src/stm32f1xx_hal_i2c.c
     ${STM32F1_SYSTEM_FILE}
 )
 
@@ -32,7 +33,7 @@ stm32f103_configure_target(stm32f1xx_hal)
 
 add_library(
     platform_stm32f103 STATIC src/Stm32Gpio.cpp src/Stm32Uart.cpp src/Stm32Spi.cpp
-                              src/HardFaultHandler.cpp
+                              src/Stm32I2c.cpp src/HardFaultHandler.cpp
 )
 
 target_include_directories(platform_stm32f103 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

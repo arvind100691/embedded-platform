@@ -2,6 +2,7 @@
 
 #include "platform/bsp/stm32f103_board/BoardConfig.hpp"
 #include "platform/stm32f103/Stm32Gpio.hpp"
+#include "platform/stm32f103/Stm32I2c.hpp"
 #include "platform/stm32f103/Stm32Spi.hpp"
 #include "platform/stm32f103/Stm32Uart.hpp"
 
@@ -23,6 +24,7 @@ platform::stm32f103::Stm32Gpio
 platform::stm32f103::Stm32Uart
     g_consoleUart(platform::bsp::stm32f103_board::BoardConfig::consoleUartInstance());
 platform::stm32f103::Stm32Spi g_spi1(platform::bsp::stm32f103_board::BoardConfig::spi1Instance());
+platform::stm32f103::Stm32I2c g_i2c1(platform::bsp::stm32f103_board::BoardConfig::i2c1Instance());
 platform::stm32f103::Stm32Gpio
     g_spi1ChipSelect(platform::bsp::stm32f103_board::BoardConfig::spi1ChipSelectPort(),
                      platform::bsp::stm32f103_board::BoardConfig::spi1ChipSelectPin());
@@ -107,6 +109,11 @@ platform::hal::IUart& consoleUart()
 platform::hal::ISpi& spi1()
 {
     return g_spi1;
+}
+
+platform::hal::II2c& i2c1()
+{
+    return g_i2c1;
 }
 
 platform::hal::IGpio& spi1ChipSelect()

@@ -35,6 +35,9 @@ The project currently has the following foundation and verified implementation i
 - `Stm32Gpio` implementation for GPIO input/output and interrupt support.
 - `Stm32Uart` synchronous and asynchronous UART implementation.
 - `Stm32Spi` blocking SPI1/SPI2 implementation for 8-bit frames.
+- STM32F103 I²C1 implementation on PB6 (SCL) and PB7 (SDA), configured for 100 kHz.
+- Portable MAX30102 driver with cooperative initialization, bounded FIFO reads, 18-bit RED/IR decoding, overflow reporting, and host unit tests.
+- Application startup raw-sample stream and `sensor on` / `sensor off` console commands, with retry handling for transient I²C errors.
 - `W25Q128` external NOR driver implementing `IFlashStorage`.
 - Application CLI commands for W25Q128 info, read, write, and single-sector erase.
 - `BufferedAsyncUart` middleware layer using fixed-capacity SPSC ring buffering.
@@ -46,7 +49,7 @@ The project currently has the following foundation and verified implementation i
 - Firmware ELF/HEX/BIN/MAP generation.
 - Hardware-verified W25Q128 JEDEC identification and erase/program/readback through the application CLI.
 
-The GPIO, UART, and SPI communication paths are implemented. The W25Q128 driver and CLI are host-tested, and hardware readback has been verified. The next peripheral vertical slice can follow the same HAL + port + BSP + test pattern, with I2C a natural candidate.
+GPIO, UART, SPI, and I²C communication paths are implemented. The W25Q128 driver and CLI are host-tested, and hardware readback has been verified. The MAX30102 driver and STM32F103 I²C integration build successfully, are covered by host tests, and have now been hardware-verified with a replacement sensor producing raw RED/IR readings on the serial console.
 
 ## Architecture
 
@@ -111,6 +114,7 @@ embedded-platform/
 +-- platform/
 |   +-- common/                  # Portable runtime foundation/utilities
 |   +-- hal/                     # Hardware abstraction interfaces
+|   +-- drivers/                 # Portable device drivers
 |   +-- os/                      # OS abstractions and implementations
 |   +-- middleware/              # Reusable runtime middleware
 |   +-- ports/                   # MCU-specific ports
@@ -138,6 +142,7 @@ embedded-platform/
 +-- docs/
     +-- architecture/
     +-- coding_standard.md
+    +-- MAX30102_Integration_Plan_STM32F103.md
 
 Notes:
 - The current checked-in repository does not include a top-level config/ directory.
@@ -281,6 +286,34 @@ flash read 0x00001020 4
 ```
 
 Erase affects exactly one aligned 4 KiB sector. Write only sends page-program data; it does not erase implicitly. Erase the containing sector first when its existing contents must be replaced, and preserve any neighboring data in that sector.
+
+## MAX30102 Raw Sensor Stream
+
+The portable MAX30102 driver is in `platform/drivers/max30102/`. It uses the
+existing `II2c` interface, validates part ID `0x15` at seven-bit address
+`0x57`, configures RED + IR acquisition, and drains a bounded number of FIFO
+samples per poll. RED and IR samples are decoded as unsigned 18-bit values.
+The driver reports hardware FIFO overflow and software queue drops; heart-rate
+and SpO₂ algorithms are intentionally out of scope.
+
+On the STM32F103 board, I²C1 uses PB6 for SCL and PB7 for SDA at 100 kHz.
+Firmware starts the raw stream at boot and prints samples as:
+
+```text
+RED=<value> IR=<value>
+```
+
+Use `sensor off` to stop output and `sensor on` to resume or reinitialize the
+sensor after a terminal error. Transient `Busy`, `Timeout`, and communication
+errors are reported and retried with a delay.
+
+**Hardware validation completed.** The original module reported I²C `Busy`, and
+both SCL and SDA measured approximately 500 mV while idle. After replacing the
+sensor module, raw RED/IR values were received on the serial console. Continue
+to verify module supply, common ground, wiring, logic levels, pull-ups, and
+sustained acquisition behavior as additional hardware testing proceeds. See
+[the integration plan](docs/MAX30102_Integration_Plan_STM32F103.md) for
+implementation and verification details.
 
 ## STM32F103 Port and BSP
 

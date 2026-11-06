@@ -19,10 +19,9 @@
 #define HAL_DMA_MODULE_ENABLED
 #define HAL_UART_MODULE_ENABLED
 #define HAL_SPI_MODULE_ENABLED
+#define HAL_I2C_MODULE_ENABLED
 
 /* Enable these when their corresponding platform implementations are added. */
-/* #define HAL_SPI_MODULE_ENABLED */
-/* #define HAL_I2C_MODULE_ENABLED */
 /* #define HAL_CAN_MODULE_ENABLED */
 /* #define HAL_ADC_MODULE_ENABLED */
 /* #define HAL_TIM_MODULE_ENABLED */
