@@ -824,8 +824,9 @@ The first firmware build exposed an important cross-build rule: every compiled S
 The portable driver in `platform/drivers/max30102/` validates the device ID,
 initializes the sensor cooperatively, reads bounded FIFO batches, decodes
 18-bit RED/IR samples, and tracks hardware FIFO overflow and software queue
-drops. It uses the existing `II2c` abstraction and has 16 passing host unit
-tests, including retry after a transient `Busy` error.
+drops. It uses the existing `II2c` abstraction and has 17 passing host unit
+tests, including sustained acquisition and retry after a transient `Busy`
+error.
 
 The STM32F103 port implements I²C1 at 100 kHz; the board maps SCL to PB6 and
 SDA to PB7. Firmware streams `RED=<value> IR=<value>` at boot and provides
@@ -1150,8 +1151,9 @@ Build/debug configuration remains centralized and reusable.
 ## 26. Immediate Next Milestone
 
 Continue MAX30102 hardware validation with sustained acquisition and FIFO
-overflow observation. The replacement sensor has produced raw RED/IR values in
-the serial console, satisfying the initial hardware bring-up milestone. The
+overflow observation. Host validation now covers 256 ordered samples without
+software queue drops, and the replacement sensor has produced raw RED/IR values
+in the serial console, satisfying the initial hardware bring-up milestone. The
 integration remains uncommitted until the user requests the commit.
 DMA remains a follow-on optimization for communication peripherals. The
 W25Q128 busy-poll loop is bounded by a configurable poll count; replacing that

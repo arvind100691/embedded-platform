@@ -354,8 +354,9 @@ The first version is complete when:
 
 -   STM32F103 firmware build succeeded; latest link used approximately 31.5 KB
     of 64 KB flash and 2.5 KB of 20 KB RAM.
--   All 16 MAX30102 host unit tests passed, including initialization, FIFO
-    decoding, overflow, queue capacity, and retry after `Busy`.
+-   All 17 MAX30102 host unit tests passed, including initialization, FIFO
+    decoding, overflow, queue capacity, sustained acquisition, and retry after
+    `Busy`.
 -   Application unit tests passed.
 -   Raw sensor output has been validated on hardware with the replacement
     sensor; serial output includes lines such as `RED=<value> IR=<value>`.

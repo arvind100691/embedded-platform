@@ -352,6 +352,35 @@ TEST(Max30102Test, FullSoftwareQueueDropsIncomingSamplesAndCountsThem)
     EXPECT_TRUE(sensor.hasSample());
 }
 
+TEST(Max30102Test, SustainedAcquisitionPreservesSamplesWithoutQueueDrops)
+{
+    constexpr std::size_t kSampleCount{256U};
+    MockI2c i2c;
+    platform::drivers::max30102::Max30102 sensor(i2c);
+    initializeSensor(i2c, sensor);
+
+    for (std::size_t sampleIndex = 0U; sampleIndex < kSampleCount; ++sampleIndex)
+    {
+        const auto writePointer =
+            static_cast<std::uint8_t>((sampleIndex + 1U) & 0x1FU);
+        const auto readPointer = static_cast<std::uint8_t>(sampleIndex & 0x1FU);
+        const auto value = static_cast<std::uint8_t>((sampleIndex % 0xFEU) + 1U);
+        i2c.setRegister(kFifoWritePointerRegister, writePointer);
+        i2c.setRegister(kFifoReadPointerRegister, readPointer);
+        i2c.setFifoData({0U, 0U, value, 0U, 0U, value});
+
+        ASSERT_TRUE(sensor.poll());
+        const auto sample = sensor.readSample();
+        ASSERT_TRUE(sample);
+        EXPECT_EQ(sample.value()->red, value);
+        EXPECT_EQ(sample.value()->infrared, value);
+    }
+
+    EXPECT_FALSE(sensor.hasSample());
+    EXPECT_EQ(sensor.softwareDroppedSamples(), 0U);
+    EXPECT_EQ(sensor.hardwareOverflowCount(), 0U);
+}
+
 TEST(Max30102Test, ReadSampleBeforeReadyReturnsNotReady)
 {
     MockI2c i2c;
