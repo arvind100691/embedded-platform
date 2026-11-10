@@ -64,9 +64,10 @@ platform::Result<void> writeSensorError(platform::middleware::cli::IConsole& con
 }
 
 platform::Result<void> writeRawSample(platform::middleware::cli::IConsole& console,
-                                      const platform::drivers::max30102::Max30102Sample& sample)
+                                      const platform::drivers::max30102::Max30102Sample& sample,
+                                      bool hasHeartRate, std::uint16_t heartRateBpm)
 {
-    std::array<char, 32U> message{};
+    std::array<char, 48U> message{};
     constexpr char kRedPrefix[] = "RED=";
     std::size_t size{0U};
     for (const char character : kRedPrefix)
@@ -88,6 +89,45 @@ platform::Result<void> writeRawSample(platform::middleware::cli::IConsole& conso
         message[size++] = character;
     }
     size = appendUnsigned(message.data(), message.size(), size, sample.infrared);
+    constexpr char kHeartRatePrefix[] = " HR=";
+    for (const char character : kHeartRatePrefix)
+    {
+        if (character == '\0')
+        {
+            break;
+        }
+        message[size++] = character;
+    }
+    if (hasHeartRate)
+    {
+        size = appendUnsigned(message.data(), message.size(), size, heartRateBpm);
+    }
+    else
+    {
+        message[size++] = '-';
+        message[size++] = '-';
+    }
+    message[size++] = '\r';
+    message[size++] = '\n';
+    return console.write(std::string_view(message.data(), size));
+}
+
+platform::Result<void> writeHeartRateError(platform::middleware::cli::IConsole& console,
+                                           platform::ErrorCode error)
+{
+    std::array<char, 48U> message{};
+    constexpr char kPrefix[] = "Heart-rate estimator error: ";
+    std::size_t size{0U};
+    for (const char character : kPrefix)
+    {
+        if (character == '\0')
+        {
+            break;
+        }
+        message[size++] = character;
+    }
+    size = appendUnsigned(message.data(), message.size(), size,
+                          static_cast<std::uint32_t>(error));
     message[size++] = '\r';
     message[size++] = '\n';
     return console.write(std::string_view(message.data(), size));
@@ -146,6 +186,8 @@ bool Application::initialize()
         }
         sensorOperational_ = true;
         sensorStreaming_ = true;
+        heartRateEstimator_.reset();
+        heartRateEstimatorOperational_ = true;
     }
 
     return true;
@@ -239,6 +281,8 @@ void Application::enableSensorStreaming(void* context)
 
     if (application->sensorOperational_)
     {
+        application->heartRateEstimator_.reset();
+        application->heartRateEstimatorOperational_ = true;
         application->sensorStreaming_ = true;
         application->sensorErrorReported_ = false;
         application->sensorRetryPolls_ = 0U;
@@ -252,6 +296,7 @@ void Application::disableSensorStreaming(void* context)
 {
     auto* application = static_cast<Application*>(context);
     application->sensorStreaming_ = false;
+    application->heartRateEstimator_.reset();
     static_cast<void>(application->console_.write("MAX30102 raw stream disabled\r\n"));
 }
 
@@ -293,11 +338,6 @@ void Application::pollSensor()
 
     sensorErrorReported_ = false;
     sensorRetryPolls_ = 0U;
-    if (!sensorStreaming_)
-    {
-        return;
-    }
-
     while (max30102_->hasSample())
     {
         const auto sample = max30102_->readSample();
@@ -309,7 +349,25 @@ void Application::pollSensor()
             return;
         }
 
-        const auto writeResult = writeRawSample(console_, *sample.value());
+        if (!sensorStreaming_)
+        {
+            continue;
+        }
+
+        if (heartRateEstimatorOperational_)
+        {
+            const auto heartRateResult = heartRateEstimator_.process(sample.value()->infrared);
+            if (!heartRateResult)
+            {
+                static_cast<void>(writeHeartRateError(console_, heartRateResult.error()));
+                heartRateEstimatorOperational_ = false;
+            }
+        }
+
+        const auto writeResult =
+            writeRawSample(console_, *sample.value(), heartRateEstimatorOperational_ &&
+                                                          heartRateEstimator_.hasHeartRate(),
+                           heartRateEstimator_.heartRateBpm());
         if (!writeResult)
         {
             sensorOperational_ = false;

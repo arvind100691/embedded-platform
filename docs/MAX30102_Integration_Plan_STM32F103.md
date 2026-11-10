@@ -176,8 +176,12 @@ Recommended sequence:
 9.  Enter ready state.
 
 For initial hardware testing, 100 samples/second and a 411 µs pulse
-width are reasonable starting points. Keep LED current configurable; the
-appropriate value depends on the module, optical setup and power budget.
+width are reasonable starting points. LED current remains configurable; the
+current default is `0x10` (approximately 3.2 mA per LED, based on the
+MAX30102's nominal 0.2 mA register step) to reduce sensor power and avoid
+unnecessarily high ADC readings. Adjust it for the breakout, optical setup,
+and signal quality; the appropriate value depends on the module and power
+budget.
 
 Use the exact bit fields and reset behavior from the datasheet. Avoid
 arbitrary busy-wait loops.
@@ -296,9 +300,9 @@ solely because the new driver exists.
 -   [ ] Confirm breakout voltage requirements and logic-level compatibility.
 -   [ ] Connect SDA, SCL, GND and the module's specified supply.
 -   [x] Configure STM32 I²C1 at 100 kHz on PB6 (SCL) and PB7 (SDA).
--   [ ] Verify ACK at address `0x57`.
--   [ ] Read part ID `0x15`.
--   [ ] Verify RED/IR values change when a finger is placed over the sensor.
+-   [x] Verify ACK at address `0x57` and part ID `0x15` through successful
+    driver initialization and live acquisition.
+-   [x] Verify that the replacement sensor produces live RED/IR values.
 -   [ ] Run sustained acquisition and check for FIFO overflow.
 -   [ ] Check I²C waveforms with a logic analyzer.
 -   [ ] Measure poll execution time and verify loop scheduling.
@@ -317,7 +321,10 @@ breakout pull-ups, sustained acquisition, and FIFO overflow behavior.
 Transient `Busy`, `Timeout`, and communication errors are reported and retried
 with a delay. Other sensor errors stop operation until `sensor on` requests a
 fresh initialization. `sensor off` disables raw output; `sensor on` enables it
-and retries initialization after a terminal failure.
+and retries initialization after a terminal failure. When streaming, each raw
+sample is logged with `HR=--` until the heart-rate estimator has enough valid
+beats; afterward it includes `HR=<bpm>`. This is a signal-processing estimate,
+not a medical measurement.
 
 ## 12. Recommended implementation sequence
 
@@ -332,8 +339,9 @@ and retries initialization after a terminal failure.
 9.  [x] Build the STM32F103 firmware and host tests.
 10. [x] Replace/verify the sensor module and confirm raw readings in the
     serial console.
-11. [ ] Only after raw acquisition is stable, consider separately tested
-    heart-rate/SpO₂ algorithms.
+11. [x] Add a heart-rate estimator with regression tests and include its result
+    with raw application UART logs. Independent reference validation remains
+    open; SpO₂ processing is not implemented.
 
 ## 13. Success criteria
 
@@ -347,18 +355,57 @@ The first version is complete when:
 -   Raw RED/IR samples are delivered in order without unexplained data
     loss.
 -   FIFO overflow and software-queue overflow are observable.
--   No heart-rate/SpO₂ algorithm or RTOS dependency has been added
-    prematurely.
+-   The initial raw-driver milestone does not require heart-rate/SpO₂
+    processing or an RTOS dependency.
 
 ## 14. Verification completed
 
--   STM32F103 firmware build succeeded; latest link used approximately 31.5 KB
-    of 64 KB flash and 2.5 KB of 20 KB RAM.
+-   Latest STM32F103 firmware build succeeded; link used 33,960 bytes of 64 KB
+    flash (51.8%) and 5,688 bytes of 20 KB RAM (27.8%).
 -   All 17 MAX30102 host unit tests passed, including initialization, FIFO
     decoding, overflow, queue capacity, sustained acquisition, and retry after
     `Busy`.
--   Application unit tests passed.
+-   Application unit tests passed before the heart-rate logging integration.
+-   Heart-rate estimator and application log regression tests have been added.
+    A host test run of these latest changes remains pending; the active build
+    configuration used for firmware has testing disabled.
 -   Raw sensor output has been validated on hardware with the replacement
-    sensor; serial output includes lines such as `RED=<value> IR=<value>`.
+    sensor; serial output includes RED, IR and heart-rate fields.
+-   The autocorrelation estimator has been built, flashed, and observed over
+    USB0 in a 42-second live capture. Numeric estimates ranged from 66 to
+    71 BPM with a median of 68 BPM.
 -   Sustained acquisition, long-term FIFO behavior, and sensor signal-quality
-    validation remain future hardware checks.
+    validation, sample-rate/timing accuracy, and independent heart-rate
+    reference comparison remain open hardware checks.
+
+## 15. Heart-rate processing foundation
+
+The signal-processing component is separate from the sensor driver at
+`platform/algorithms/heartrate/`. It removes a slowly varying baseline using
+an EMA divisor of 64, then searches autocorrelation lags in a rolling
+768-sample window. With the current defaults it accepts periods corresponding
+to 40–180 BPM, analyzes every 100 samples, requires RMS amplitude of at least
+100 counts and normalized correlation of at least 0.350, and waits for three
+consecutive qualified windows before reporting. A rolling median of five
+periods smooths the estimate; a period change over 10% resets that history.
+Three consecutive weak windows clear the reported estimate. Rate and quality
+thresholds are configurable.
+
+The component has regression tests for periodic synthetic waveforms, secondary
+peaks, interval jitter, noise rejection, invalid configuration, and reset
+behavior. The application includes its current estimate in each raw UART log
+line as `HR=--` until enough valid windows are detected, then `HR=<bpm>`.
+`sensor off` stops streaming and resets estimator state; `sensor on` starts a
+fresh estimate.
+
+In an earlier 35-second live capture, the peak-counting implementation
+reported 100 BPM continuously because it repeatedly accepted short intervals
+near its configured maximum. It was replaced with rolling-window
+autocorrelation and a confidence gate. In a subsequent 42-second capture of
+the current 768-sample firmware, numeric output ranged from 66 to 71 BPM with
+a median of 68 BPM. Independent analysis of settled 10-second raw-data
+windows found strong periodicity near 64–71 BPM. An earlier, shorter-window
+tuning build was less stable. These observations show improvement over the
+prior ceiling failure, but they do not prove accuracy. Verify actual sensor
+sample timing and compare the estimate with a trusted reference before relying
+on it.

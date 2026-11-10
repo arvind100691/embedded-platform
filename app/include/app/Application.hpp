@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "platform/algorithms/heartrate/HeartRateEstimator.hpp"
 #include "platform/drivers/max30102/Max30102.hpp"
 #include "platform/hal/IFlashStorage.hpp"
 #include "platform/hal/IGpio.hpp"
@@ -26,20 +27,22 @@ public:
     [[nodiscard]] bool blinkingEnabled() const noexcept;
 
     int run();
+    void pollSensor();
 
 private:
     static void enableSensorStreaming(void* context);
     static void disableSensorStreaming(void* context);
-    void pollSensor();
 
     platform::hal::IGpio& statusLed_;
     platform::middleware::cli::IConsole& console_;
     app::console::commands::FlashCommands flashCommands_;
     app::console::commands::LedCommands ledCommands_;
     platform::drivers::max30102::Max30102* max30102_;
+    platform::algorithms::heartrate::HeartRateEstimator heartRateEstimator_{};
     bool sensorOperational_{false};
     bool sensorStreaming_{false};
     bool sensorErrorReported_{false};
+    bool heartRateEstimatorOperational_{true};
     std::uint32_t sensorRetryPolls_{0U};
 };
 

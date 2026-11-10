@@ -805,6 +805,8 @@ MAX30102 portable driver, FIFO buffering, and host tests     ✅
 STM32F103 I2C1 adapter and PB6/PB7 board wiring             ✅
 MAX30102 raw UART stream and transient I2C retry behavior    ✅
 MAX30102 physical raw-sample verification                   ✅
+IR autocorrelation heart-rate estimator and UART logging       ✅
+Independent heart-rate reference validation                   ⏳
 ```
 
 ### SPI and W25Q128 Hardware Milestone
@@ -837,8 +839,8 @@ The initial module returned I²C error `Busy` (code 4); both SCL and SDA measure
 approximately 500 mV while idle, instead of the expected pulled-up high level,
 normally 3.3 V. After replacing the suspected faulty module, raw RED/IR values
 were received on the serial console. Continue checking power, shared ground,
-logic levels, wiring, pull-ups, and sustained acquisition. The integration
-remains uncommitted pending the user's commit request.
+logic levels, wiring, pull-ups, and sustained acquisition. The integration is
+recorded in the MAX30102 commits.
 See [the MAX30102 integration plan](docs/MAX30102_Integration_Plan_STM32F103.md).
 
 ---
@@ -1154,7 +1156,22 @@ Continue MAX30102 hardware validation with sustained acquisition and FIFO
 overflow observation. Host validation now covers 256 ordered samples without
 software queue drops, and the replacement sensor has produced raw RED/IR values
 in the serial console, satisfying the initial hardware bring-up milestone. The
-integration remains uncommitted until the user requests the commit.
+integration is recorded in the MAX30102 commits.
+
+The heart-rate estimator in `platform/algorithms/heartrate/` uses an EMA
+baseline (divisor 64) and autocorrelation over a 768-sample IR window. It
+searches the configured 40–180 BPM range, evaluates every 100 samples, gates
+on 100-count RMS amplitude and 0.350 correlation, requires three good windows,
+uses a five-period median, resets history on a greater-than-10% period change,
+and clears the estimate after three weak windows. The application logs BPM
+beside raw RED/IR values (`HR=--` until confidence is sufficient).
+
+A 42-second USB0 capture of the current 768-sample implementation produced
+estimates from 66 to 71 BPM (median 68). Settled-window raw-data
+autocorrelation was consistent with roughly 64–71 BPM. An earlier
+shorter-window tuning build was less stable. This is not a trusted-reference
+comparison; actual sample timing, sustained FIFO behavior, and sensor signal
+quality still need validation before treating the estimate as accurate.
 DMA remains a follow-on optimization for communication peripherals. The
 W25Q128 busy-poll loop is bounded by a configurable poll count; replacing that
 count with a time-based timeout and adding an appropriate inter-poll delay

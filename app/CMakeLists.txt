@@ -50,6 +50,7 @@ if(BUILD_STM32F103)
     target_link_libraries(
         embedded_firmware
         PRIVATE platform_common
+                platform_heart_rate
                 platform_hal
                 platform_os
                 platform_max30102

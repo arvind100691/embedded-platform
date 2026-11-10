@@ -11,8 +11,8 @@ namespace platform::drivers::max30102
 
 struct Max30102Config
 {
-    std::uint8_t redLedCurrent{0x24U};
-    std::uint8_t infraredLedCurrent{0x24U};
+    std::uint8_t redLedCurrent{0x10U};
+    std::uint8_t infraredLedCurrent{0x10U};
 };
 
 struct Max30102Sample

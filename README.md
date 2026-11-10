@@ -300,12 +300,19 @@ On the STM32F103 board, I²C1 uses PB6 for SCL and PB7 for SDA at 100 kHz.
 Firmware starts the raw stream at boot and prints samples as:
 
 ```text
-RED=<value> IR=<value>
+RED=<value> IR=<value> HR=<bpm>
 ```
 
-Use `sensor off` to stop output and `sensor on` to resume or reinitialize the
-sensor after a terminal error. Transient `Busy`, `Timeout`, and communication
-errors are reported and retried with a delay.
+`HR=--` is printed until enough valid windows have been detected. The estimate
+is derived from rolling-window autocorrelation, not individual peak counting,
+and is a signal-processing result rather than a medical measurement. Use
+`sensor off` to stop output and `sensor on` to resume or reinitialize the sensor
+after a terminal error. Transient `Busy`, `Timeout`, and communication errors
+are reported and retried with a delay.
+
+To view the console from Linux, use a serial terminal such as `tio` at 115200
+baud, for example `tio -b 115200 /dev/ttyUSB0`. Only one program can own the
+serial port at a time.
 
 **Hardware validation completed.** The original module reported I²C `Busy`, and
 both SCL and SDA measured approximately 500 mV while idle. After replacing the
@@ -314,6 +321,24 @@ to verify module supply, common ground, wiring, logic levels, pull-ups, and
 sustained acquisition behavior as additional hardware testing proceeds. See
 [the integration plan](docs/MAX30102_Integration_Plan_STM32F103.md) for
 implementation and verification details.
+
+The initial heart-rate processing foundation is in
+`platform/algorithms/heartrate/`. It is independent of the sensor driver,
+accepts configurable-rate IR samples, removes a slowly varying baseline with
+an EMA divisor of 64, and searches autocorrelation lags within a 40–180 BPM
+range over a 768-sample window. It analyzes every 100 new samples, requires
+three consecutive windows meeting the default 100-count RMS amplitude and
+0.350 correlation thresholds, and smooths periods with a five-window median.
+A greater-than-10% period change resets the stability history; three weak
+windows clear the reported rate. Thresholds and rate limits are configurable.
+
+A 42-second USB0 capture after flashing the current 768-sample implementation
+produced numeric estimates between 66 and 71 BPM, with a median of 68 BPM.
+Independent autocorrelation checks on settled raw-data windows were consistent
+with roughly 64–71 BPM. This is promising repeatability evidence, not
+ground-truth validation. The nominal 100 Hz sample-rate assumption and sensor
+readings should be checked against a trusted reference before relying on the
+estimate.
 
 ## STM32F103 Port and BSP
 

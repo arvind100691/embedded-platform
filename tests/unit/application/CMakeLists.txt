@@ -16,6 +16,7 @@ target_link_libraries(
     application_unit_tests
     PRIVATE
         platform_hal
+        platform_heart_rate
         platform_cli
         platform_max30102
         GTest::gtest_main

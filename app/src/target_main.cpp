@@ -66,8 +66,8 @@ int main()
         return 1;
     }
 
-    app::Application application(platform::bsp::stm32f103_board::statusLed(), console, flash,
-                                 &max30102);
+    static app::Application application(platform::bsp::stm32f103_board::statusLed(), console,
+                                        flash, &max30102);
 
     return application.run();
 }
