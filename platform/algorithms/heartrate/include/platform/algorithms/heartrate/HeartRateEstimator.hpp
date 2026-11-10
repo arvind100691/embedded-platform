@@ -4,27 +4,21 @@
 #include <cstddef>
 #include <cstdint>
 
+#include "platform/algorithms/heartrate/HeartRateAlgorithm.hpp"
 #include "platform/common/Result.hpp"
 
 namespace platform::algorithms::heartrate
 {
 
-struct HeartRateEstimatorConfig
-{
-    std::uint16_t sampleRateHz{100U};
-    std::uint16_t minimumBpm{40U};
-    std::uint16_t maximumBpm{180U};
-    std::uint32_t minimumSignalAmplitude{100U};
-    std::uint16_t minimumCorrelationPermille{350U};
-};
-
 class HeartRateEstimator final
 {
 public:
-    static constexpr std::size_t kAnalysisWindowSamples{768U};
+    static constexpr std::size_t kAnalysisWindowSamples{kHeartRateAnalysisWindowSamples};
     static constexpr std::size_t kIntervalHistoryCapacity{5U};
 
     explicit HeartRateEstimator(HeartRateEstimatorConfig config = {});
+    HeartRateEstimator(const IHeartRateAlgorithm& algorithm,
+                       HeartRateEstimatorConfig config = {});
 
     void reset() noexcept;
     platform::Result<void> process(std::uint32_t infraredSample);
@@ -36,6 +30,7 @@ private:
     void analyzeWindow();
 
     HeartRateEstimatorConfig config_;
+    const IHeartRateAlgorithm* algorithm_;
     bool hasHeartRate_{false};
     bool baselineInitialized_{false};
     std::int64_t baseline_{0};

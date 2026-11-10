@@ -327,10 +327,75 @@ The initial heart-rate processing foundation is in
 accepts configurable-rate IR samples, removes a slowly varying baseline with
 an EMA divisor of 64, and searches autocorrelation lags within a 40–180 BPM
 range over a 768-sample window. It analyzes every 100 new samples, requires
-three consecutive windows meeting the default 100-count RMS amplitude and
+three qualified windows meeting the default 100-count RMS amplitude and
 0.350 correlation thresholds, and smooths periods with a five-window median.
-A greater-than-10% period change resets the stability history; three weak
-windows clear the reported rate. Thresholds and rate limits are configurable.
+Occasional weak windows do not restart the qualified-window count; three
+consecutive weak windows clear the reported rate. A greater-than-10% period
+change resets the stability history. Thresholds and rate limits are configurable.
+
+The estimator uses a Strategy-style `IHeartRateAlgorithm` contract. Its
+default constructor keeps autocorrelation behavior unchanged; applications can
+inject `PeakDetectionHeartRateAlgorithm` (or another implementation) by
+reference without heap allocation. The estimator owns shared sample
+preprocessing, confidence-independent interval validation, stability gating,
+and median smoothing, while each strategy only finds a candidate beat interval.
+Injected strategies must outlive the estimator. This keeps algorithm-specific
+logic independently testable and makes additional methods straightforward to
+add without duplicating the streaming and validation pipeline.
+
+```cpp
+platform::algorithms::heartrate::PeakDetectionHeartRateAlgorithm peakDetection{};
+platform::algorithms::heartrate::HeartRateEstimator estimator{peakDetection};
+```
+
+Keep the strategy object alive for at least as long as its estimator.
+
+### Benchmarking against BIDMC
+
+The host-side benchmark runs both strategies on BIDMC PLETH at 125 Hz and
+compares estimates with the dataset's 1 Hz PPG pulse rate (`PULSE`) and
+ECG-derived heart rate (`HR`). It reports per-recording and aggregate
+coverage, mean absolute error, signed bias, and the percentage of estimates
+within 5 BPM. BIDMC is ICU data, and its monitor numerics are a reference
+signal rather than a clinical gold standard.
+
+Download the Signals and Numerics CSV files from the
+[BIDMC dataset](https://physionet.org/content/bidmc/1.0.0/) into one directory.
+The benchmark does not download or commit the dataset. Build and run it with:
+
+```sh
+mkdir -p build/bidmc_csv
+wget -r -np -nd -A '*_Signals.csv,*_Numerics.csv' \
+  -P build/bidmc_csv \
+  https://physionet.org/files/bidmc/1.0.0/bidmc_csv/
+cmake --preset host-debug -DBUILD_HEARTRATE_BENCHMARKS=ON
+cmake --build build/host-debug --target bidmc_heart_rate_benchmark
+build/host-debug/tools/benchmarks/heartrate/bidmc_heart_rate_benchmark build/bidmc_csv
+```
+
+The dataset is distributed under the terms described in its
+[license](https://physionet.org/content/bidmc/1.0.0/LICENSE); follow its
+attribution requirements when sharing benchmark results.
+
+#### Initial BIDMC run
+
+The unmodified default thresholds were evaluated on all 53 recordings. These
+are pooled one-second reference comparisons; coverage is the fraction of valid
+reference points with an estimate, and MAE/bias/within-5 BPM are computed only
+where an estimate was present.
+
+| Strategy | Reference | Coverage | MAE | Bias | Within 5 BPM |
+|---|---|---:|---:|---:|---:|
+| Autocorrelation | PPG `PULSE` | 92.7% | 7.0 BPM | -5.0 BPM | 83.5% |
+| Autocorrelation | ECG `HR` | 92.7% | 6.8 BPM | -5.7 BPM | 83.5% |
+| Peak detection | PPG `PULSE` | 96.3% | 3.0 BPM | -1.5 BPM | 89.6% |
+| Peak detection | ECG `HR` | 96.2% | 3.0 BPM | -2.1 BPM | 88.7% |
+
+Several recordings remain difficult: autocorrelation MAE exceeded 30 BPM on
+some records, and peak detection also had subject-level outliers. This is a
+baseline comparison on the same dataset used to compare strategies, not a
+held-out validation set or a clinical accuracy claim. Inspect per-record
+output and use separate subjects for any future tuning and final evaluation.
 
 A 42-second USB0 capture after flashing the current 768-sample implementation
 produced numeric estimates between 66 and 71 BPM, with a median of 68 BPM.

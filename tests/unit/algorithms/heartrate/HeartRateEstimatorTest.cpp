@@ -12,6 +12,7 @@ namespace
 
 using platform::algorithms::heartrate::HeartRateEstimator;
 using platform::algorithms::heartrate::HeartRateEstimatorConfig;
+using platform::algorithms::heartrate::PeakDetectionHeartRateAlgorithm;
 
 void processSamples(HeartRateEstimator& estimator, const std::vector<std::uint32_t>& samples)
 {
@@ -34,11 +35,45 @@ TEST(HeartRateEstimatorTest, EstimatesRateFromPeriodicIrPeaks)
         const auto phase = index % 50U;
         samples.push_back(100000U + (phase == 10U ? 20000U : 0U));
     }
+    processSamples(estimator, samples);
+
+    ASSERT_TRUE(estimator.hasHeartRate());
+    EXPECT_EQ(estimator.heartRateBpm(), 120U);
+}
+
+TEST(HeartRateEstimatorTest, EstimatesRateWithPeakDetectionStrategy)
+{
+    PeakDetectionHeartRateAlgorithm algorithm;
+    HeartRateEstimator estimator(algorithm);
+    std::vector<std::uint32_t> samples;
+    for (std::size_t index = 0U; index < 1400U; ++index)
+    {
+        const auto phase = index % 50U;
+        samples.push_back(100000U + (phase == 10U ? 20000U : 0U));
+    }
 
     processSamples(estimator, samples);
 
     ASSERT_TRUE(estimator.hasHeartRate());
     EXPECT_EQ(estimator.heartRateBpm(), 120U);
+}
+
+TEST(HeartRateEstimatorTest, PeakDetectionRejectsSecondaryPeaks)
+{
+    PeakDetectionHeartRateAlgorithm algorithm;
+    HeartRateEstimator estimator(algorithm);
+    std::vector<std::uint32_t> samples;
+    for (std::size_t index = 0U; index < 1700U; ++index)
+    {
+        const auto phase = index % 92U;
+        const auto pulse = phase == 10U ? 12000U : phase == 45U ? 5000U : 0U;
+        samples.push_back(100000U + pulse);
+    }
+
+    processSamples(estimator, samples);
+
+    ASSERT_TRUE(estimator.hasHeartRate());
+    EXPECT_NEAR(estimator.heartRateBpm(), 65U, 1U);
 }
 
 TEST(HeartRateEstimatorTest, DetectsLowerAmplitudeIrPeaks)
@@ -168,4 +203,22 @@ TEST(HeartRateEstimatorTest, ResetClearsPreviousRate)
     estimator.reset();
 
     EXPECT_FALSE(estimator.hasHeartRate());
+}
+
+TEST(HeartRateEstimatorTest, ResetPreservesInjectedAlgorithm)
+{
+    PeakDetectionHeartRateAlgorithm algorithm;
+    HeartRateEstimator estimator(algorithm);
+    estimator.reset();
+
+    std::vector<std::uint32_t> samples;
+    for (std::size_t index = 0U; index < 1400U; ++index)
+    {
+        const auto phase = index % 50U;
+        samples.push_back(100000U + (phase == 10U ? 20000U : 0U));
+    }
+    processSamples(estimator, samples);
+
+    ASSERT_TRUE(estimator.hasHeartRate());
+    EXPECT_EQ(estimator.heartRateBpm(), 120U);
 }

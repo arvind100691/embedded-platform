@@ -1,4 +1,9 @@
-add_library(platform_heart_rate STATIC src/HeartRateEstimator.cpp)
+add_library(
+    platform_heart_rate
+    STATIC
+    src/HeartRateAlgorithm.cpp
+    src/HeartRateEstimator.cpp
+)
 
 target_include_directories(
     platform_heart_rate

@@ -1,0 +1,4 @@
+add_executable(bidmc_heart_rate_benchmark BidmcHeartRateBenchmark.cpp)
+
+target_link_libraries(bidmc_heart_rate_benchmark PRIVATE platform_heart_rate)
+target_compile_features(bidmc_heart_rate_benchmark PRIVATE cxx_std_17)

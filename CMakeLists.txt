@@ -31,6 +31,8 @@ option(BUILD_STM32F103 "Build STM32F103 firmware" OFF)
 
 option(BUILD_STM32F103_INTEGRATION_TESTS "Build STM32F103 hardware integration tests" OFF)
 
+option(BUILD_HEARTRATE_BENCHMARKS "Build host-side heart-rate benchmark tools" OFF)
+
 # ============================================================================
 # CMake modules
 # ============================================================================
@@ -87,6 +89,13 @@ if(BUILD_TESTING)
 
     add_subdirectory(tests)
 
+endif()
+
+if(BUILD_HEARTRATE_BENCHMARKS)
+    if(BUILD_STM32F103)
+        message(FATAL_ERROR "BUILD_HEARTRATE_BENCHMARKS requires a host build")
+    endif()
+    add_subdirectory(tools/benchmarks/heartrate)
 endif()
 
 # ============================================================================

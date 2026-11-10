@@ -382,14 +382,43 @@ The first version is complete when:
 
 The signal-processing component is separate from the sensor driver at
 `platform/algorithms/heartrate/`. It removes a slowly varying baseline using
-an EMA divisor of 64, then searches autocorrelation lags in a rolling
-768-sample window. With the current defaults it accepts periods corresponding
-to 40–180 BPM, analyzes every 100 samples, requires RMS amplitude of at least
-100 counts and normalized correlation of at least 0.350, and waits for three
-consecutive qualified windows before reporting. A rolling median of five
-periods smooths the estimate; a period change over 10% resets that history.
-Three consecutive weak windows clear the reported estimate. Rate and quality
-thresholds are configurable.
+an EMA divisor of 64 and analyzes a rolling 768-sample window every 100 new
+samples. `HeartRateEstimator` defaults to autocorrelation and also supports
+the injected `PeakDetectionHeartRateAlgorithm` Strategy. Both strategies share
+the same configured 40–180 BPM interval bounds and three-qualified-window gate,
+five-period median smoothing, 10% period-change reset, and weak-window reset.
+Occasional weak windows do not discard previously qualified intervals; three
+consecutive weak windows clear the current estimate.
+The autocorrelation strategy additionally uses the default 100-count RMS
+amplitude and 0.350 correlation thresholds. Injected strategies use a
+non-owning reference and must outlive the estimator.
+
+### BIDMC benchmark baseline
+
+The host-only `bidmc_heart_rate_benchmark` tool evaluates both strategies using
+the BIDMC PLETH waveform at its recorded 125 Hz sample rate. One-second
+estimates are compared with the BIDMC monitor's PPG pulse-rate (`PULSE`) and
+ECG heart-rate (`HR`) numerics. The tool reports coverage, MAE, signed bias, and
+the percentage of reported estimates within 5 BPM. To reproduce this baseline,
+see the BIDMC benchmark instructions and exact invocation in the repository
+[README](../README.md#benchmarking-against-bidmc).
+
+On all 53 recordings using the default estimator thresholds, pooled results
+were:
+
+| Strategy | Reference | Coverage | MAE | Bias | Within 5 BPM |
+|---|---|---:|---:|---:|---:|
+| Autocorrelation | PPG `PULSE` | 92.7% | 7.0 BPM | -5.0 BPM | 83.5% |
+| Autocorrelation | ECG `HR` | 92.7% | 6.8 BPM | -5.7 BPM | 83.5% |
+| Peak detection | PPG `PULSE` | 96.3% | 3.0 BPM | -1.5 BPM | 89.6% |
+| Peak detection | ECG `HR` | 96.2% | 3.0 BPM | -2.1 BPM | 88.7% |
+
+These are baseline comparisons on the same records used to compare methods,
+not held-out validation. Some records have large errors for both strategies.
+BIDMC's bedside monitor numerics are useful references but are not independent
+beat annotations or clinical gold standards; results do not establish clinical
+accuracy or guarantee performance on the MAX30102. Any threshold tuning must
+be evaluated on subjects held out from tuning.
 
 The component has regression tests for periodic synthetic waveforms, secondary
 peaks, interval jitter, noise rejection, invalid configuration, and reset
